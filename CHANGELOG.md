@@ -1,5 +1,10 @@
 # Cold Outreach Companion - Release notes
 
+## v1.3.0 - 14th Oct 2026 (draft / not deployed)
+- Open a dedicated record from Pipeline or Follow-ups, showing context, drafts, screenshot links, previous conversations, editable notes and next steps.
+- Add Apps Script backend actions for full record retrieval and editing; keep a summary fallback until the new backend is deployed.
+- Preserve Google Sheet, sandbox Google account, existing Drive files and new independent PWA installation identity.
+
 ## v1.2.1 - 14th Oct 2026
 - Migrated the working PWA into an independent GitHub repository and standalone GitHub Pages address.
 - Changed the installation identity to `/Cold_Outreach/`, outside Appointment Companion's scope.
