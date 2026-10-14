@@ -1,5 +1,10 @@
 # Cold Outreach Companion - Release notes
 
+## v1.2.2 - 14th Oct 2026
+- Added real 192px and 512px PNG installation icons, rendered from the original ice-cube/UW vector artwork.
+- Updated the independent PWA manifest and Apple touch icon to use PNGs, with an SVG fallback.
+- Updated the app version, About text and service-worker cache without changing any CRM or sandbox Google backend data.
+
 ## v1.2.1 - 14th Oct 2026
 - Migrated the working PWA into an independent GitHub repository and standalone GitHub Pages address.
 - Changed the installation identity to `/Cold_Outreach/`, outside Appointment Companion's scope.
