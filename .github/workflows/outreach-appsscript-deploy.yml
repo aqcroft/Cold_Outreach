@@ -48,7 +48,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "$CLASPRC_JSON" || -z "$OUTREACH_SCRIPT_ID" || -z "$OUTREACH_DEPLOYMENT_ID" ]]; then
-            echo "::error::Missing authentication or script/deployment ID. See PWA/outreach/backend/GITHUB_DEPLOY_SETUP.md."
+            echo "::error::Missing authentication or script/deployment ID. See backend/GITHUB_DEPLOY_SETUP.md."
             exit 1
           fi
           npm install --global @google/clasp@3.4.1
