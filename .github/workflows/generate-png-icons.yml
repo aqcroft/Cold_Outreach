@@ -1,0 +1,53 @@
+name: Generate Cold Outreach Android PNG icons
+
+# PNG fallbacks improve Chrome/Android install support.
+# Icons are derived from the existing SVG; no externally hosted images.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "assets/icon.svg"
+      - ".github/workflows/generate-png-icons.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cold-outreach-install-icons
+  cancel-in-progress: false
+
+jobs:
+  png-fallbacks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Convert ice cube SVG to PNG icon sizes
+        run: |
+          python -m pip install --disable-pip-version-check 'CairoSVG==2.8.2' 'Pillow==11.3.0'
+          python - <<'PY'
+          import cairosvg
+          from PIL import Image
+          from pathlib import Path
+          import io
+          svg = Path('assets/icon.svg')
+          for size in (192, 512):
+              raster = cairosvg.svg2png(url=str(svg), output_width=size, output_height=size)
+              im = Image.open(io.BytesIO(raster)).convert('RGB')
+              im.save(f'assets/icon-{size}.png', optimize=True)
+              print(f'Created assets/icon-{size}.png: {im.size}')
+          PY
+      - name: Commit generated PNG images if changed
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/icon-192.png assets/icon-512.png
+          if ! git diff --cached --quiet; then
+            git commit -m 'assets: regenerate PWA Android PNG icons [skip ci]'
+            git push origin HEAD:main
+          fi
