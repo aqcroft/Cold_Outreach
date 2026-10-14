@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#35016e" />
+<meta name="description" content="Cold Outreach - UW Partner relationship follow-up, CRM pipeline and prospect handoffs." />
+<meta name="application-name" content="Cold Outreach" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Cold Outreach" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" type="image/svg+xml" href="./assets/icon.svg" />
+<link rel="apple-touch-icon" href="./assets/icon.svg" />
+<title>Cold Outreach | UW Partner Toolkit</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1f2430;--muted:#69707d;--line:#e3e6eb;--accent:#5b4bdb;--soft:#efedff;--ok:#1f8a4c;--warn:#b56a00;--danger:#b83a3a}
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+.app{max-width:760px;margin:0 auto;min-height:100vh;background:var(--bg)}
+header{position:sticky;top:0;z-index:20;background:rgba(245,245,247,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:14px 16px 10px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand-lockup{display:flex;align-items:center;gap:10px;min-width:0}.brand-icon{width:44px;height:44px;border-radius:12px;flex:none}.brand h1{font-size:20px;margin:0}.brand .sub{font-size:12px;color:var(--muted)}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.tab{border:1px solid var(--line);background:#fff;padding:10px 8px;border-radius:12px;font-weight:700;font-size:13px}.tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+main{padding:16px 14px 100px}.view{display:none}.view.active{display:block}.stack{display:grid;gap:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.card h2,.card h3{margin:0 0 8px}.card h2{font-size:18px}.card h3{font-size:15px}.muted{color:var(--muted);font-size:13px;line-height:1.45}.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 9px;font-size:12px;font-weight:700;background:var(--soft);color:var(--accent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:grid;gap:6px}
+.choice-block{display:grid;gap:7px}.choice-label{font-size:12px;font-weight:800;color:#4d5563}.choice-row{display:flex;gap:7px;flex-wrap:wrap}.choice-btn{border:1px solid var(--line);border-radius:999px;padding:9px 12px;font:750 12px/1.1 system-ui;background:#fff;color:var(--ink);cursor:pointer;transition:.15s ease}.choice-btn:active{transform:scale(.98)}
+.choice-block.platform .choice-btn{background:#f5f2ff;border-color:#d9d1fb;color:#4e3aa8}.choice-block.platform .choice-btn.active{background:#6f5bd3;border-color:#6f5bd3;color:#fff}
+.choice-block.situation .choice-btn{background:#eef6ff;border-color:#c9dcf5;color:#315f8f}.choice-block.situation .choice-btn.active{background:#4f86bd;border-color:#4f86bd;color:#fff}
+.choice-block.relationship .choice-btn{background:#f3f7f2;border-color:#d2dfd0;color:#436441}.choice-block.relationship .choice-btn.active{background:#62875e;border-color:#62875e;color:#fff}.field label{font-size:12px;font-weight:700;color:#4d5563}.field input,.field textarea,.field select{width:100%;border:1px solid var(--line);border-radius:11px;background:#fff;padding:11px 12px;font:inherit;color:var(--ink)}.field textarea{min-height:90px;resize:vertical}.wide{grid-column:1/-1}
+.upload{border:1.5px dashed #bcc2cc;border-radius:14px;padding:18px;text-align:center;background:#fafbfc}.upload input{margin-top:10px;width:100%}.preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.thumb{width:76px;height:76px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:0;border-radius:11px;padding:11px 14px;font-weight:800;background:var(--ink);color:white}.btn:disabled{opacity:.58;cursor:not-allowed}.btn.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn.accent{background:var(--accent)}.btn.small{padding:8px 10px;font-size:12px}.btn.good{background:var(--ok)}
+.person{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center}.avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#e9eaf0;font-weight:900;border:0;padding:0;overflow:hidden}.photoAvatar img{width:100%;height:100%;object-fit:cover}.modal{display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.7);padding:18px}.modal.open{display:grid;place-items:center}.modalCard{background:#fff;border-radius:18px;width:min(600px,100%);max-height:92vh;overflow:hidden;display:grid;grid-template-rows:auto 1fr auto}.modalHead{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}.modalBody{min-height:60vh;background:#111}.modalBody iframe{width:100%;height:70vh;border:0}.modalFoot{display:flex;gap:8px;padding:12px}.person h3{margin:0;font-size:15px}.meta{font-size:12px;color:var(--muted)}.status{font-size:11px;font-weight:800;padding:5px 8px;border-radius:999px;background:#fff4df;color:#865300}.status.new{background:#edf3ff;color:#345c9c}
+.output{white-space:pre-wrap;background:#fafbfc;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14px;line-height:1.5}.section-title{display:flex;justify-content:space-between;align-items:center;gap:8px}.pipeline-card{cursor:pointer}.pipeline-card:active{transform:scale(.995)}.pipeline-details{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.pipeline-card.open .pipeline-details{display:block}.pipeline-toggle{font-size:12px;color:var(--accent);font-weight:800;margin-top:8px}.pipeline-card.open .pipeline-toggle::after{content:'Hide details ▲'}.pipeline-card:not(.open) .pipeline-toggle::after{content:'Tap to view details ▼'}.draft-edit{width:100%;min-height:120px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:12px;font:inherit;color:var(--ink);line-height:1.5;resize:vertical}.draft-save-note{font-size:12px;color:var(--muted);margin-top:6px}.section-title h3{margin:0}.timeline{display:grid;gap:9px}.event{display:grid;grid-template-columns:78px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line)}.event:first-child{border-top:0}.event .date{font-size:12px;color:var(--muted);font-weight:700}.event strong{font-size:13px}.due{border-left:4px solid #d88400}.footbar{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(760px,100%);padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(245,245,247,.97);border-top:1px solid var(--line);display:flex;gap:8px}.footbar .btn{flex:1}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}.wide{grid-column:auto}.brand h1{font-size:18px}.event{grid-template-columns:68px 1fr}.tabs{gap:5px}.tab{font-size:12px;padding:9px 4px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><div class="brand-lockup"><img class="brand-icon" src="./assets/icon.svg" alt="" width="44" height="44" /><div><h1>Cold Outreach</h1><div class="sub">UW Partner toolkit - Relationship follow-up</div></div></div><span class="pill">v1.2.1</span></div>
+  <div class="tabs">
+    <button class="tab active" data-view="new">New prospect</button>
+    <button class="tab" data-view="pipeline">Pipeline</button>
+    <button class="tab" data-view="followups">Follow-ups</button>
+  </div>
+  <div id="outreachInstallBanner" style="display:none;margin-top:10px;padding:9px 10px;border:1px solid #c9b4ec;border-radius:12px;background:#f3ecff;align-items:center;justify-content:space-between;gap:8px">
+    <span style="font-size:12px;color:#493279">Install Cold Outreach as its own app</span>
+    <button class="btn small accent" type="button" id="outreachInstallButton">Install app</button>
+  </div>
+</header>
+<main>
+<section class="view active" id="new">
+<div class="stack">
+  <details class="card" id="backendSettings">
+    <summary><strong>⚙️ CRM connection</strong> <span class="muted">one-time setup</span></summary>
+    <div class="grid2" style="margin-top:12px">
+      <div class="field wide"><label>Apps Script web app URL</label><input id="backendUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec"></div>
+      <div class="field wide"><label>Workspace key</label><input id="backendKey" type="password" placeholder="Private key for this CRM"></div>
+    </div>
+    <div class="actions" style="margin-top:10px"><button class="btn small accent" onclick="saveBackendSettings()">Save connection</button><button class="btn small secondary" onclick="testBackend()">Test</button></div>
+    <p class="muted" id="backendState">Not connected yet. Until configured, the pilot still works as a read-only/test interface.</p>
+  </details>
+  <div class="card">
+    <h2>Capture someone</h2>
+    <p class="muted">Paste what you have. The aim is to capture enough context now so you do not have to remember it later.</p>
+    <div class="grid2">
+      
+      <div class="field wide choice-block platform">
+        <div class="choice-label">1. Platform</div>
+        <input id="sourceType" type="hidden" value="LinkedIn">
+        <div class="choice-row" data-choice-group="sourceType">
+          <button type="button" class="choice-btn active" data-value="LinkedIn">LinkedIn</button>
+          <button type="button" class="choice-btn" data-value="Networking">Networking</button>
+          <button type="button" class="choice-btn" data-value="WhatsApp">WhatsApp</button>
+          <button type="button" class="choice-btn" data-value="Facebook">Facebook</button>
+          <button type="button" class="choice-btn" data-value="Referral">Referral</button>
+          <button type="button" class="choice-btn" data-value="Phone / in person">Phone / in person</button>
+          <button type="button" class="choice-btn" data-value="Other">Other</button>
+        </div>
+      </div>
+      <div class="field wide choice-block situation">
+        <div class="choice-label">2. Situation</div>
+        <input id="track" type="hidden" value="Redundancy / job seeker">
+        <div class="choice-row" data-choice-group="track">
+          <button type="button" class="choice-btn active" data-value="Redundancy / job seeker">Open to work</button>
+          <button type="button" class="choice-btn" data-value="Networking contact">Networking contact</button>
+          <button type="button" class="choice-btn" data-value="Cold outreach">Cold outreach</button>
+          <button type="button" class="choice-btn" data-value="Potential customer">Potential customer</button>
+          <button type="button" class="choice-btn" data-value="Connector / referral">Connector / referral</button>
+          <button type="button" class="choice-btn" data-value="Other">Other</button>
+        </div>
+      </div>
+      <div class="field wide choice-block relationship">
+        <div class="choice-label">3. Relationship</div>
+        <input id="relationship" type="hidden" value="Cold">
+        <div class="choice-row" data-choice-group="relationship">
+          <button type="button" class="choice-btn active" data-value="Cold">Cold</button>
+          <button type="button" class="choice-btn" data-value="Connected">Connected</button>
+          <button type="button" class="choice-btn" data-value="Met once">Met once</button>
+          <button type="button" class="choice-btn" data-value="Know reasonably well">Know reasonably well</button>
+          <button type="button" class="choice-btn" data-value="Warm">Warm</button>
+        </div>
+      </div>
+      <div class="field wide"><label>LinkedIn post / source link</label><input id="sourceLink" placeholder="Paste the post you spotted"></div>
+      <div class="field wide"><label>LinkedIn profile / contact link</label><input id="profileLink" placeholder="Paste their profile link"></div>
+      <div class="field wide"><div class="muted"><strong>Name:</strong> detected from the profile screenshot / profile data - no typing needed.</div></div>
+      <div class="field wide"><label>Anything else you know</label><textarea id="prospectNotes" placeholder="Optional context"></textarea></div>
+      <div class="field wide">
+        <label>Screenshots</label>
+        <div class="upload"><strong>📸 Add everything useful in one go</strong><div class="muted" style="margin-top:6px">Profile, original post, Job preferences, messages or anything else relevant. The aim is for the tool to classify each screenshot by what it contains rather than making you sort them first.</div><div class="muted" style="margin-top:6px">Images are automatically resized and compressed before upload so larger batches are more reliable on mobile.</div><input id="newFiles" type="file" accept="image/*" multiple><div class="preview" id="newPreview"></div></div>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:12px"><button class="btn accent" id="saveProspectBtn" onclick="saveProspect()">Save & create handoff</button></div>
+    <p class="muted" id="saveNote" style="margin-bottom:0">Saving creates/updates the CRM record, uploads the screenshots and creates a ChatGPT handoff file. Nothing is cleared until you choose to start the next prospect.</p>
+  </div>
+  <div class="card" id="analysisOutput" style="display:none">
+    <div class="section-title"><h3 id="processedTitle">Handoff ready ✓</h3><span class="pill">ChatGPT handoff</span></div>
+    <div class="output" id="processReport" style="margin:10px 0 14px"></div>
+    <div class="actions" id="savedProspectLinks" style="margin-bottom:14px;display:none"></div>
+    <div class="muted" style="margin-bottom:8px">Open a new chat in this Cold Outreach project and paste this prompt:</div>
+    <div class="output" id="handoffPrompt" style="margin-bottom:10px"></div>
+    <div class="actions" style="margin-bottom:12px">
+      <button class="btn accent" id="copyPromptBtn" onclick="copyHandoffPrompt()">Copy prompt</button>
+    </div>
+    <div id="copyPromptStatus" class="muted" style="display:none;margin:-4px 0 12px">Prompt copied ✓</div>
+    <div class="muted" style="margin-bottom:8px">Backup options:</div>
+    <div class="actions">
+      <button class="btn accent" id="downloadHandoffBtn" onclick="downloadHandoff()">Download handoff .md</button>
+      <a class="btn secondary" id="openHandoffDriveBtn" href="#" target="_blank" style="text-decoration:none;display:none">Open Drive copy</a>
+      <button class="btn good" id="retrieveOutputBtn" onclick="retrieveChatGPTOutput()">Retrieve ChatGPT output</button>
+    </div>
+    <div id="retrievedOutput" style="display:none;margin-top:14px"></div>
+    <div id="clearReady" style="margin-top:14px;border-top:1px solid var(--line);padding-top:14px">
+      <div class="muted" style="margin-bottom:8px">Keep this form until the handoff file is safely downloaded. Then clear it when you are ready for another prospect.</div>
+      <button class="btn secondary" onclick="clearProspectForm()">Clear form / Next prospect</button>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="view" id="pipeline">
+<div class="stack">
+  <div class="card">
+    <div class="section-title"><div><h2>Pipeline</h2><div class="muted">Come back here when somebody accepts, replies or needs the next action.</div></div><button class="btn small secondary" onclick="loadPipeline()">Refresh</button></div>
+  </div>
+  <div id="pipelineList" class="stack"><div class="card muted">Loading prospects…</div></div>
+</div>
+</section>
+
+<section class="view" id="followups">
+<div class="stack">
+  <div class="card">
+    <div class="section-title"><div><h2>Follow-ups</h2><div class="muted">Focused next actions from the CRM.</div></div><button class="btn small secondary" onclick="loadFollowups()">Refresh</button></div>
+  </div>
+  <div id="followupList" class="stack"><div class="card muted">Loading follow-ups…</div></div>
+</div>
+</section>
+<details class="card" style="margin-top:18px" id="aboutOutreach">
+  <summary style="cursor:pointer;font-weight:700">About Cold Outreach - v1.2.1</summary>
+  <p class="muted" style="margin-bottom:6px">14th Oct 2026 - Independent Cold Outreach website and install identity, separated from Appointment Companion. CRM and settings remain unchanged.</p>
+  <p class="muted" style="margin:0 0 6px">Your existing CRM, screenshots, ChatGPT handoffs and connection settings are unchanged. An internet connection is still needed to save or retrieve CRM data.</p>
+  <p class="muted" style="margin:0">Install from Chrome's browser menu (Install app / Add to Home screen) or Safari's Share menu (Add to Home Screen).</p>
+</details>
+</main><div class="footbar"><button class="btn secondary" onclick="window.open('https://docs.google.com/spreadsheets/d/1nS-dlFnVq3lYb1mbEMD-HDOszRTnLbUkoWlUlsBwyAY/edit','_blank')">Open CRM</button><button class="btn accent" onclick="switchTo('new')">+ New prospect</button></div>
+</div>
+<script>
+var BACKEND_URL_KEY='acOutreachBackendUrl';
+var BACKEND_KEY_KEY='acOutreachBackendKey';
+function switchTo(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById(id).classList.add('active');const tab=document.querySelector('[data-view="'+id+'"]');if(tab)tab.classList.add('active');if(id==='pipeline')loadPipeline();if(id==='followups')loadFollowups();window.scrollTo({top:0,behavior:'smooth'})}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchTo(t.dataset.view)));
+document.querySelectorAll('[data-choice-group]').forEach(group=>group.addEventListener('click',e=>{const b=e.target.closest('.choice-btn');if(!b)return;const id=group.dataset.choiceGroup;const input=document.getElementById(id);if(input)input.value=b.dataset.value;group.querySelectorAll('.choice-btn').forEach(x=>x.classList.toggle('active',x===b));}));
+function preview(input, target){const box=document.getElementById(target);box.innerHTML='';[...input.files].forEach(f=>{const img=document.createElement('img');img.className='thumb';img.src=URL.createObjectURL(f);box.appendChild(img)})}
+document.getElementById('newFiles')?.addEventListener('change',e=>preview(e.target,'newPreview'));
+document.getElementById('updateFiles')?.addEventListener('change',e=>preview(e.target,'updatePreview'));
+function copyText(id){navigator.clipboard.writeText(document.getElementById(id).innerText)}
+async function copyHandoffPrompt(){
+  const btn=document.getElementById('copyPromptBtn');
+  const status=document.getElementById('copyPromptStatus');
+  try{
+    await navigator.clipboard.writeText(document.getElementById('handoffPrompt').innerText);
+    if(btn){btn.textContent='Copied ✓';btn.classList.remove('accent');btn.classList.add('good')}
+    if(status){status.style.display='block';status.textContent='Prompt copied ✓'}
+  }catch(e){
+    if(status){status.style.display='block';status.textContent='⚠️ Could not copy prompt - please select and copy it manually.'}
+  }
+}
+function showDemo(){document.getElementById('demoOutput').style.display='block';document.getElementById('demoOutput').scrollIntoView({behavior:'smooth'})}
+function backendConfig(){return{url:localStorage.getItem(BACKEND_URL_KEY)||'',key:localStorage.getItem(BACKEND_KEY_KEY)||''}}
+function loadBackendSettings(){try{const c=backendConfig();const u=document.getElementById('backendUrl'),k=document.getElementById('backendKey');if(u&&c.url)u.value=c.url;if(k&&c.key)k.value=c.key;const s=document.getElementById('backendState');if(s)s.textContent=c.url&&c.key?'CRM connection saved on this device.':'Not connected yet. Enter the Apps Script URL and workspace key, then tap Save connection.'}catch(e){const s=document.getElementById('backendState');if(s)s.textContent='⚠️ Connection settings error: '+e.message}}
+function saveBackendSettings(){try{const url=document.getElementById('backendUrl').value.trim();const key=document.getElementById('backendKey').value;if(!url||!key){document.getElementById('backendState').textContent='⚠️ Enter both the Apps Script URL and workspace key.';return}localStorage.setItem(BACKEND_URL_KEY,url);localStorage.setItem(BACKEND_KEY_KEY,key);loadBackendSettings();document.getElementById('backendState').textContent='✅ CRM connection saved on this device.';}catch(e){document.getElementById('backendState').textContent='⚠️ Could not save connection: '+e.message}}
+async function crmPost(payload){const c=backendConfig();if(!c.url||!c.key)throw new Error('CRM connection is not configured yet.');const r=await fetch(c.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({...payload,workspace_key:c.key}),redirect:'follow',cache:'no-store'});const t=await r.text();let d;try{d=JSON.parse(t)}catch{throw new Error('CRM returned a non-JSON response.')}if(!d.ok)throw new Error(d.error||'CRM request failed.');return d}
+function retryableFetchError(err){const m=String(err&&err.message||err||'');return /failed to fetch|networkerror|network request failed|load failed/i.test(m)}
+function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+async function crmPostWithRetry(payload,retries=1){
+  let lastError;
+  for(let attempt=0;attempt<=retries;attempt++){
+    try{return await crmPost(payload)}
+    catch(e){
+      lastError=e;
+      if(attempt>=retries||!retryableFetchError(e))throw e;
+      await delay(650);
+    }
+  }
+  throw lastError;
+}
+async function fileToDataUrl(file){return new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=()=>reject(fr.error||new Error('Could not read '+(file?.name||'selected file')+'.'));fr.onabort=()=>reject(new Error('Reading '+(file?.name||'selected file')+' was cancelled.'));try{fr.readAsDataURL(file)}catch(err){reject(err instanceof Error?err:new Error(String(err||'Could not read selected file.')))}})}
+async function compressImageFile(file,maxDimension=1600,quality=.82){
+  if(!file||!String(file.type||'').startsWith('image/'))return{data_url:await fileToDataUrl(file),type:file?.type||''};
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((resolve,reject)=>{
+      const el=new Image();
+      el.onload=()=>resolve(el);
+      el.onerror=()=>reject(new Error('The image could not be decoded.'));
+      el.src=url;
+    });
+    const width=img.naturalWidth||img.width;
+    const height=img.naturalHeight||img.height;
+    if(!width||!height)throw new Error('The image has no readable dimensions.');
+    const scale=Math.min(1,maxDimension/Math.max(width,height));
+    const targetWidth=Math.max(1,Math.round(width*scale));
+    const targetHeight=Math.max(1,Math.round(height*scale));
+    const canvas=document.createElement('canvas');
+    canvas.width=targetWidth;
+    canvas.height=targetHeight;
+    const ctx=canvas.getContext('2d');
+    if(!ctx)throw new Error('Image compression is not supported by this browser.');
+    ctx.drawImage(img,0,0,targetWidth,targetHeight);
+    const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('The browser could not compress the image.')),'image/jpeg',quality));
+    return{data_url:await fileToDataUrl(blob),type:'image/jpeg'};
+  }catch(err){
+    return{data_url:await fileToDataUrl(file),type:file.type||''};
+  }finally{
+    URL.revokeObjectURL(url);
+  }
+}
+function inferredName(){const url=document.getElementById('profileLink')?.value||'';try{const p=new URL(url);const slug=p.pathname.split('/').filter(Boolean).pop()||'';return slug.replace(/-\d{5,}$/,'').replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}catch{return''}}
+async function collectFiles(inputId,purpose='context'){
+  const files=[...(document.getElementById(inputId)?.files||[])];
+  const out=[];
+  for(let i=0;i<files.length;i++){
+    const f=files[i];
+    try{
+      const note=document.getElementById('saveNote');
+      if(note)note.textContent='Optimising screenshot '+(i+1)+' of '+files.length+' before upload…';
+      const processed=await compressImageFile(f,1600,.82);
+      out.push({name:f.name,type:processed.type,purpose,data_url:processed.data_url});
+    }catch(err){
+      const msg=err?.message||String(err||'Unknown file-read error');
+      throw new Error('Could not process screenshot "'+f.name+'": '+msg);
+    }
+  }
+  return out;
+}
+let prospectSaveInFlight=false;
+function saveSignature(){const inp=document.getElementById('newFiles');const files=[...(inp?.files||[])].map(f=>[f.name,f.size,f.lastModified].join(':')).join('|');return [document.getElementById('profileLink')?.value.trim()||'',document.getElementById('sourceLink')?.value.trim()||'',document.getElementById('track')?.value||'',document.getElementById('sourceType')?.value||'',document.getElementById('relationship')?.value||'',document.getElementById('prospectNotes')?.value.trim()||'',files].join('||')}
+async function sha256(text){const data=new TextEncoder().encode(text);const hash=await crypto.subtle.digest('SHA-256',data);return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('')}
+function setProspectSaveState(state,message=''){const b=document.getElementById('saveProspectBtn');const n=document.getElementById('saveNote');if(!b)return;if(state==='saving'){b.disabled=true;b.textContent='Analysing…'}else if(state==='saved'){b.disabled=true;b.textContent='Saved ✓'}else{b.disabled=false;b.textContent='Save prospect'}if(n&&message)n.textContent=message}
+function unlockProspectSave(){if(!prospectSaveInFlight){setProspectSaveState('ready','Ready to save. Any changed details or screenshots will create an updated capture.');document.getElementById('analysisOutput').style.display='none'}}
+function safeText(v){return String(v??'')}
+function tagProspectNameInComment(text,name){
+  const out=String(text||'');
+  const first=String(name||'').trim().split(/\s+/)[0];
+  if(!first)return out;
+  const lower=out.toLowerCase(), needle=first.toLowerCase();
+  if(lower.includes('@'+needle))return out;
+  let from=0;
+  while(from<out.length){
+    const idx=lower.indexOf(needle,from);
+    if(idx<0)return out;
+    const before=idx===0?'':out[idx-1];
+    const after=idx+first.length>=out.length?'':out[idx+first.length];
+    const beforeOk=!before||!/\w/.test(before);
+    const afterOk=!after||!/\w/.test(after);
+    if(beforeOk&&afterOk)return out.slice(0,idx)+'@'+out.slice(idx);
+    from=idx+first.length;
+  }
+  return out;
+}
+let currentSavedProspect=null;
+let currentHandoff=null;
+
+function renderHandoff(d){
+  currentSavedProspect={
+    name:d.prospect_name||'',
+    profile_url:document.getElementById('profileLink').value.trim(),
+    source_url:document.getElementById('sourceLink').value.trim(),
+    row:d.row||null,
+    capture_id:d.capture_id||localStorage.getItem('acOutreachLastCaptureId')||''
+  };
+  currentHandoff={content:d.handoff_markdown||'',filename:d.handoff_filename||'prospect-handoff.md',url:d.handoff_url||''};
+
+  const ref=(d.capture_id||localStorage.getItem('acOutreachLastCaptureId')||'').slice(0,8).toUpperCase();
+  const prospectName=String(d.prospect_name||currentSavedProspect?.name||'').trim();
+  const prompt=(prospectName?prospectName+' - ':'')+'Process the Cold Outreach CRM handoff '+(ref?ref+': ':'')+currentHandoff.filename+'. Find that exact handoff in the connected Google Drive, follow its instructions, use the saved screenshots as the evidence, do not research the LinkedIn URLs, and write the completed analysis and drafts back to the CRM so the Companion can retrieve them.';
+
+  const card=document.getElementById('analysisOutput');
+  card.style.display='block';
+  document.getElementById('processedTitle').textContent=(d.prospect_name||'Prospect')+' handoff ready ✓';
+
+  const report=[
+    '📁 '+((d.files||[]).length)+' screenshot'+(((d.files||[]).length)===1?'':'s')+' saved to Drive',
+    '📊 CRM record created / updated',
+    '📝 ChatGPT handoff .md created',
+    '🔗 Prospect folder linked',
+    '🧠 Analysis + drafting will happen in this ChatGPT project'
+  ];
+  document.getElementById('processReport').textContent=report.join('\n');
+
+  const savedLinks=document.getElementById('savedProspectLinks');
+  const linkButtons=[];
+  if(currentSavedProspect.source_url){
+    linkButtons.push('<a class="btn secondary" href="'+escapeHtml(currentSavedProspect.source_url)+'" target="_blank" rel="noopener" style="text-decoration:none">Open original post</a>');
+  }
+  if(currentSavedProspect.profile_url){
+    linkButtons.push('<a class="btn secondary" href="'+escapeHtml(currentSavedProspect.profile_url)+'" target="_blank" rel="noopener" style="text-decoration:none">Open profile</a>');
+  }
+  if(savedLinks){
+    savedLinks.innerHTML=linkButtons.join('');
+    savedLinks.style.display=linkButtons.length?'flex':'none';
+  }
+
+  document.getElementById('handoffPrompt').textContent=prompt;
+  const copyPromptBtn=document.getElementById('copyPromptBtn');
+  const copyPromptStatus=document.getElementById('copyPromptStatus');
+  if(copyPromptBtn){copyPromptBtn.textContent='Copy prompt';copyPromptBtn.classList.remove('good');copyPromptBtn.classList.add('accent')}
+  if(copyPromptStatus){copyPromptStatus.style.display='none';copyPromptStatus.textContent='Prompt copied ✓'}
+
+  const driveBtn=document.getElementById('openHandoffDriveBtn');
+  if(d.handoff_url){driveBtn.href=d.handoff_url;driveBtn.style.display='inline-flex'}else{driveBtn.style.display='none'}
+  card.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function retrieveChatGPTOutput(){
+  const box=document.getElementById('retrievedOutput');
+  const btn=document.getElementById('retrieveOutputBtn');
+  if(!currentSavedProspect){alert('Save the prospect first.');return}
+  try{
+    btn.disabled=true;btn.textContent='Checking CRM…';
+    const capture=currentSavedProspect.capture_id||localStorage.getItem('acOutreachLastCaptureId')||'';
+    let p;
+    try{
+      const d=await crmPostWithRetry({
+        action:'getProspectOutput',
+        capture_id:capture,
+        profile_url:currentSavedProspect.profile_url||'',
+        prospect_name:currentSavedProspect.name||''
+      },1);
+      p=d.prospect;
+    }catch(e){
+      if(!/unknown action/i.test(String(e&&e.message||e||'')))throw e;
+      const legacy=await crmPostWithRetry({action:'listProspects'},1);
+      const ps=legacy.prospects||[];
+      p=ps.find(x=>(capture&&x.capture_id===capture)||(currentSavedProspect.profile_url&&x.profile_url===currentSavedProspect.profile_url));
+    }
+    if(!p)throw new Error('This prospect could not be found in the CRM.');
+    const ready=!!(p.public_comment||p.connection_instruction||p.first_dm);
+    box.style.display='block';
+    if(!ready){
+      box.innerHTML='<div class="output">ChatGPT output is not in the CRM yet. Finish processing the handoff in ChatGPT, then tap Retrieve ChatGPT output again.</div>';
+      return;
+    }
+    window.currentRetrievedProspect=p;
+    const editableSection=(title,text,id,type,noteId)=>text?'<div style="margin-top:12px"><div class="section-title"><h3>'+title+'</h3><button class="btn small secondary" onclick="copyDraftText(\''+id+'\')">Copy</button></div><textarea class="draft-edit" id="'+id+'">'+escapeHtml(text)+'</textarea><div class="actions" style="margin-top:8px"><button class="btn small good" onclick="saveRetrievedDraft(\''+type+'\',\''+id+'\',\''+noteId+'\')">Save changes to CRM</button></div><div class="draft-save-note" id="'+noteId+'">Edit here if you want to tweak the wording. Saving keeps the original history and adds your revised version.</div></div>':'';
+    const readOnlySection=(title,text,id)=>text?'<div style="margin-top:12px"><h3>'+title+'</h3><div class="output" id="'+id+'">'+escapeHtml(text)+'</div></div>':'';
+    const actionControls='<div class="actions" style="margin:10px 0 2px">'
+      +(!p.comment_sent?'<button class="btn small secondary" onclick="markAndRefreshRetrieved(\''+encodeURIComponent(p.profile_url)+'\',\''+encodeURIComponent(p.name)+'\',\'comment_sent\')">☐ Comment sent</button>':'<span class="pill">✓ Comment sent</span>')
+      +(!p.connection_sent?'<button class="btn small secondary" onclick="markAndRefreshRetrieved(\''+encodeURIComponent(p.profile_url)+'\',\''+encodeURIComponent(p.name)+'\',\'connection_sent\')">☐ Connection request sent</button>':'<span class="pill">✓ Connection request sent</span>')
+      +'</div>';
+    const taggedComment=tagProspectNameInComment(p.public_comment,p.name);
+    box.innerHTML='<div class="section-title"><h3>ChatGPT output ✓</h3><span class="pill">'+escapeHtml(p.draft_status||'Draft ready')+'</span></div>'
+      +editableSection('Public comment',taggedComment,'retrievedComment','Suggested public comment - Draft','retrievedCommentNote')
+      +actionControls
+      +'<div class="actions" style="margin-top:8px">'
+      +(p.source_post?'<a class="btn small secondary" href="'+escapeHtml(p.source_post)+'" target="_blank">Open post</a>':'')
+      +(p.profile_url?'<a class="btn small secondary" href="'+escapeHtml(p.profile_url)+'" target="_blank">Open profile</a>':'')
+      +'</div>'
+      +readOnlySection('Connection request',p.connection_instruction,'retrievedConnection')
+      +editableSection('First UW DM - ready for later',p.first_dm,'retrievedDm','Suggested first DM - Draft','retrievedDmNote')
+      +(p.first_dm?'<div class="field" style="margin-top:10px"><label>Want ChatGPT to reconsider anything specific?</label><textarea id="retrievedDmReworkNote" placeholder="Optional - e.g. too CV-like, too long, feels salesy"></textarea></div><div class="actions" style="margin-top:8px"><button class="btn small accent" onclick="copyRetrievedDmReworkPrompt()">🔄 Rework DM</button></div><div class="draft-save-note" id="retrievedDmReworkStatus">Runs the current DM back through the latest Cold Outreach rules and keeps the previous draft in CRM history.</div>':'')
+      +'<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">'
+      +'<h3>Add more evidence / refine this prospect</h3>'
+      +'<div class="muted" style="margin:6px 0 10px">Forgot a screenshot or spotted something else useful? Add it here. The revised handoff will include all screenshots already saved for this prospect plus the new evidence.</div>'
+      +'<div class="upload"><strong>📸 Add more screenshots</strong><input id="retrievedEvidenceFiles" type="file" accept="image/*" multiple onchange="preview(this,\'retrievedEvidencePreview\')"><div class="preview" id="retrievedEvidencePreview"></div></div>'
+      +'<div class="field" style="margin-top:10px"><label>Anything else ChatGPT should reconsider?</label><textarea id="retrievedEvidenceNote" placeholder="Optional refinement note"></textarea></div>'
+      +'<div class="actions" style="margin-top:10px"><button class="btn accent" id="addEvidenceBtn" onclick="addEvidenceFromRetrieved()">Add evidence & create revised handoff</button></div>'
+      +'<div class="draft-save-note" id="addEvidenceNote">This updates the existing CRM prospect - it does not create a duplicate row.</div>'
+      +'</div>';
+  }catch(e){
+    const msg=String(e&&e.message||e||'Unknown CRM error');
+    box.style.display='block';
+    box.innerHTML='<div class="output">⚠️ '+escapeHtml(retryableFetchError(e)?'Could not reach the CRM after an automatic retry. Check your connection and tap Retrieve ChatGPT output again.':msg)+'</div>';
+  }finally{
+    btn.disabled=false;btn.textContent='Retrieve ChatGPT output';
+  }
+}
+
+async function saveRetrievedDraft(type,elementId,noteId){
+  const p=window.currentRetrievedProspect;
+  const el=document.getElementById(elementId);
+  const note=document.getElementById(noteId);
+  if(!p||!el)return;
+  const content=('value' in el?el.value:el.innerText).trim();
+  if(!content){alert('The draft cannot be blank.');return}
+  try{
+    if(note)note.textContent='Saving changes…';
+    await crmPostWithRetry({
+      action:'updateDraft',
+      capture_id:p.capture_id||'',
+      profile_url:p.profile_url||'',
+      prospect_name:p.name||'',
+      draft_type:type,
+      content:content
+    },1);
+    if(type==='Suggested public comment - Draft')p.public_comment=content;
+    if(type==='Suggested first DM - Draft')p.first_dm=content;
+    p.draft_status='Edited in Companion';
+    if(note)note.textContent='Saved to CRM ✓';
+  }catch(e){
+    if(note)note.textContent='⚠️ '+String(e&&e.message||e||'Could not save changes');
+  }
+}
+
+async function addEvidenceFromRetrieved(){
+  const p=window.currentRetrievedProspect;
+  const input=document.getElementById('retrievedEvidenceFiles');
+  const noteEl=document.getElementById('retrievedEvidenceNote');
+  const status=document.getElementById('addEvidenceNote');
+  const btn=document.getElementById('addEvidenceBtn');
+  if(!p){alert('Retrieve the prospect output first.');return}
+  const selected=[...(input?.files||[])];
+  const extraNote=(noteEl?.value||'').trim();
+  if(!selected.length&&!extraNote){alert('Add at least one screenshot or a refinement note.');return}
+  try{
+    if(btn){btn.disabled=true;btn.textContent='Preparing revised handoff…'}
+    if(status)status.textContent='Optimising and uploading the new evidence…';
+    const files=[];
+    for(let i=0;i<selected.length;i++){
+      const f=selected[i];
+      const processed=await compressImageFile(f,1600,.82);
+      files.push({name:f.name,type:processed.type,purpose:'additional context',data_url:processed.data_url});
+      if(status)status.textContent='Prepared '+(i+1)+' of '+selected.length+' screenshot'+(selected.length===1?'':'s')+'…';
+    }
+    const sig=(p.capture_id||'')+'||'+extraNote+'||'+selected.map(f=>[f.name,f.size,f.lastModified].join(':')).join('|');
+    const newCaptureId=await sha256(sig);
+    const d=await crmPostWithRetry({
+      action:'addEvidence',
+      capture_id:p.capture_id||'',
+      new_capture_id:newCaptureId,
+      profile_url:p.profile_url||'',
+      prospect_name:p.name||'',
+      note:extraNote,
+      files:files
+    },1);
+    p.capture_id=d.capture_id||newCaptureId;
+    localStorage.setItem('acOutreachLastCaptureId',p.capture_id);
+    if(status)status.textContent='Additional evidence saved ✓ Revised handoff ready below.';
+    renderHandoff(d);
+  }catch(e){
+    if(status)status.textContent='⚠️ '+String(e&&e.message||e||'Could not add evidence');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Add evidence & create revised handoff'}
+  }
+}
+
+async function markAndRefreshRetrieved(profile,name,action){
+  await markPipelineAction(profile,name,action);
+  await retrieveChatGPTOutput();
+}
+
+function downloadHandoff(){
+  if(!currentHandoff?.content)return;
+  const blob=new Blob([currentHandoff.content],{type:'text/markdown;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=currentHandoff.filename||'prospect-handoff.md';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function setProspectSaveState(state,message=''){
+  const b=document.getElementById('saveProspectBtn');
+  const n=document.getElementById('saveNote');
+  if(!b)return;
+  if(state==='saving'){b.disabled=true;b.textContent='Saving…'}
+  else if(state==='saved'){b.disabled=true;b.textContent='Handoff ready ✓'}
+  else{b.disabled=false;b.textContent='Save & create handoff'}
+  if(n&&message)n.textContent=message;
+}
+function unlockProspectSave(){
+  if(!prospectSaveInFlight){
+    setProspectSaveState('ready','Ready to save. Nothing is cleared until you explicitly start the next prospect.');
+    document.getElementById('analysisOutput').style.display='none';
+    currentSavedProspect=null;
+    currentHandoff=null;
+  }
+}
+
+async function saveProspect(){
+  if(prospectSaveInFlight)return;
+  try{
+    prospectSaveInFlight=true;
+    setProspectSaveState('saving','Saving the CRM record, screenshots and ChatGPT handoff…');
+    const capture_id=await sha256(saveSignature());
+    const files=await collectFiles('newFiles','context');
+    const payload={
+      action:'saveProspect',
+      capture_id,
+      prospect:{
+        name:inferredName(),
+        profile_url:document.getElementById('profileLink').value.trim(),
+        source_url:document.getElementById('sourceLink').value.trim(),
+        track:document.getElementById('track').value,
+        source:document.getElementById('sourceType').value,
+        relationship:document.getElementById('relationship').value,
+        notes:document.getElementById('prospectNotes').value.trim()
+      },
+      files
+    };
+    let d=await crmPost(payload);
+    if(d.requires_confirmation){
+      const label=d.prospect_name||'This prospect';
+      const same=d.same_capture?'The CRM recognises this as the same capture. ':'The CRM already has a record for this person. ';
+      const ok=confirm(same+'\n\n'+label+' already exists.\n\nOverwrite the existing prospect with the details/evidence on this form and create a fresh ChatGPT handoff?\n\nPrevious conversation history and sent-action dates will be preserved.');
+      if(!ok){
+        setProspectSaveState('ready','Existing prospect left unchanged. You can adjust the form and try again.');
+        return;
+      }
+      setProspectSaveState('saving','Updating the existing prospect and creating a revised handoff…');
+      d=await crmPost({...payload,overwrite_existing:true});
+    }
+    localStorage.setItem('acOutreachLastCaptureId',d.capture_id||capture_id);
+    setProspectSaveState('saved',d.overwritten?'Existing prospect updated. Previous history preserved; revised handoff ready.':'Saved. Download the handoff file, then process it in a new chat in this project.');
+    renderHandoff(d);
+  }catch(e){
+    const msg=e?.message||String(e||'Unknown error');
+    setProspectSaveState('ready','Save failed: '+msg+' Your links, notes and screenshots are still here - fix the issue and retry.');
+  }finally{
+    prospectSaveInFlight=false;
+  }
+}
+
+function clearProspectForm(){
+  if(!confirm('Clear this prospect and start another? Everything processed has been saved to the CRM.'))return;
+  document.getElementById('sourceLink').value='';
+  document.getElementById('profileLink').value='';
+  document.getElementById('prospectNotes').value='';
+  document.getElementById('newFiles').value='';
+  document.getElementById('newPreview').innerHTML='';
+  document.getElementById('analysisOutput').style.display='none';
+  currentSavedProspect=null;
+  currentHandoff=null;
+  const savedLinks=document.getElementById('savedProspectLinks');
+  if(savedLinks){savedLinks.innerHTML='';savedLinks.style.display='none'}
+  localStorage.removeItem('acOutreachLastCaptureId');
+  setProspectSaveState('ready','Ready for the next prospect.');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function escapeHtml(s){return safeText(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function statusLabel(p){
+  if(p.first_dm_sent)return 'DM sent';
+  if(p.connected)return 'Connected';
+  if(p.connection_sent)return 'Waiting for connection';
+  return p.status||'New';
+}
+async function loadPipeline(){
+  const box=document.getElementById('pipelineList');if(!box)return;
+  box.innerHTML='<div class="card muted">Loading prospects…</div>';
+  try{
+    const d=await crmPost({action:'listProspects'});
+    const ps=d.prospects||[];
+    if(!ps.length){box.innerHTML='<div class="card muted">No prospects yet.</div>';return}
+    box.innerHTML=ps.map((p,i)=>{
+      const connected=!!p.connected, sent=!!p.connection_sent, dmSent=!!p.first_dm_sent;
+      const next = dmSent ? (p.next_action||'Follow-up as appropriate') : connected ? 'First DM ready' : sent ? 'Waiting for connection acceptance' : (p.next_action||'Review first action');
+      const connectButton = sent && !connected ? `<button class="btn small good" onclick="event.stopPropagation();markPipelineAction('${encodeURIComponent(p.profile_url)}','${encodeURIComponent(p.name)}','connected')">✓ They connected</button>` : '';
+      const commentAction = !p.comment_sent ? `<button class="btn small secondary" onclick="event.stopPropagation();markPipelineAction('${encodeURIComponent(p.profile_url)}','${encodeURIComponent(p.name)}','comment_sent')">☐ Comment sent</button>` : '<span class="pill">✓ Comment sent</span>';
+      const connectionAction = !p.connection_sent ? `<button class="btn small secondary" onclick="event.stopPropagation();markPipelineAction('${encodeURIComponent(p.profile_url)}','${encodeURIComponent(p.name)}','connection_sent')">☐ Connection request sent</button>` : '<span class="pill">✓ Connection request sent</span>';
+      const commentText=tagProspectNameInComment(p.public_comment,p.name);
+      const comment = p.public_comment ? `<div style="margin-top:12px"><div class="section-title"><h3>Public comment</h3><button class="btn small secondary" onclick="event.stopPropagation();copyDraftText('pipelineComment${i}')">Copy</button></div><textarea class="draft-edit" id="pipelineComment${i}" onclick="event.stopPropagation()">${escapeHtml(commentText)}</textarea><div class="actions" style="margin-top:8px"><button class="btn small good" onclick="event.stopPropagation();savePipelineDraft(${i},'Suggested public comment - Draft','pipelineComment${i}')">Save changes to CRM</button></div><div class="draft-save-note" id="pipelineCommentNote${i}">Edit here if you want to tweak the wording. Saving creates a new CRM history entry.</div></div>` : '';
+      const connection = p.connection_instruction ? `<div style="margin-top:12px"><h3>Connection request</h3><div class="output">${escapeHtml(p.connection_instruction)}</div></div>` : '';
+      const dm = p.first_dm ? `<div style="margin-top:12px"><div class="section-title"><h3>First UW DM${connected?'':' - ready for later'}</h3><button class="btn small secondary" onclick="event.stopPropagation();copyDraftText('pipelineDm${i}')">Copy</button></div><textarea class="draft-edit" id="pipelineDm${i}" onclick="event.stopPropagation()">${escapeHtml(p.first_dm)}</textarea><div class="actions" style="margin-top:8px"><button class="btn small good" onclick="event.stopPropagation();savePipelineDraft(${i},'Suggested first DM - Draft','pipelineDm${i}')">Save changes to CRM</button><button class="btn small accent" onclick="event.stopPropagation();copyPipelineDmReworkPrompt(${i})">🔄 Rework DM</button>${connected&&!dmSent?`<button class="btn small good" onclick="event.stopPropagation();markPipelineAction('${encodeURIComponent(p.profile_url)}','${encodeURIComponent(p.name)}','dm_sent')">✓ DM sent</button>`:''}</div><div class="field" style="margin-top:8px"><label>Want ChatGPT to reconsider anything specific?</label><textarea id="pipelineDmReworkNote${i}" onclick="event.stopPropagation()" placeholder="Optional - e.g. too CV-like, too long, feels salesy"></textarea></div><div class="draft-save-note" id="pipelineDmNote${i}">Edit here if you want to tweak the wording. Saving creates a new CRM history entry.</div><div class="draft-save-note" id="pipelineDmReworkStatus${i}">Rework uses the latest Cold Outreach rules and keeps the previous draft in CRM history.</div></div>` : '';
+      const links = `<div class="actions" style="margin-top:10px">${p.source_post?`<a class="btn small secondary" href="${escapeHtml(p.source_post)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open original post</a>`:''}${p.profile_url?`<a class="btn small secondary" href="${escapeHtml(p.profile_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open profile</a>`:''}${p.folder_url?`<a class="btn small secondary" href="${escapeHtml(p.folder_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Files</a>`:''}${connectButton}</div>`;
+      const actions = `<div class="actions" style="margin-top:10px">${commentAction}${connectionAction}</div>`;
+      return `<div class="card pipeline-card" onclick="togglePipelineCard(event,${i})"><div class="section-title"><div><h3>${escapeHtml(p.name)}</h3><div class="meta">${escapeHtml(p.source||'')} · ${escapeHtml(p.track||'')} · ${escapeHtml(p.relationship||'')}</div></div><span class="status">${escapeHtml(statusLabel(p))}</span></div><div class="muted" style="margin-top:8px"><strong>Next:</strong> ${escapeHtml(next)}</div><div class="pipeline-toggle"></div><div class="pipeline-details">${links}${comment}${actions}${connection}${dm}</div></div>`;
+    }).join('');
+    window.pipelineProspects=ps;
+  }catch(e){box.innerHTML='<div class="card muted">⚠️ '+escapeHtml(e.message)+'</div>'}
+}
+function togglePipelineCard(event,i){
+  if(event.target.closest('a,button'))return;
+  const card=event.currentTarget;
+  card.classList.toggle('open');
+}
+function copyPipelineDm(i){navigator.clipboard.writeText((window.pipelineProspects||[])[i]?.first_dm||'')}
+function buildDmReworkPrompt(p,feedback){
+  const name=String(p?.name||'This prospect').trim()||'This prospect';
+  const ref=String(p?.capture_id||'').slice(0,8).toUpperCase();
+  const extra=String(feedback||'').trim();
+  return name+' - Rework the current Suggested first DM'+(ref?' for Cold Outreach CRM handoff '+ref:'')+'. Read the existing prospect evidence, analysis and current stored first DM from the CRM and apply the latest Cold Outreach project instructions. Reassess the message rather than merely proofreading or polishing it. ANALYSE DEEPLY. REFERENCE LIGHTLY. Keep the outreach natural, relationship-first and proportionate. Avoid CV-style recitation, long lists of skills/roles/achievements, over-personalisation, assumptions and salesy wording. Use only the most relevant 1-3 themes where useful, soften subjective judgements, preserve transparency and an easy exit, and protect the role/career the person actually wants where relevant. Do not research the LinkedIn URLs.'+(extra?' Adrian specifically wants you to reconsider this: '+extra+'.':'')+' Save the revised wording back to the same CRM prospect as a NEW Conversation History entry using the exact Type label `Suggested first DM - Draft`, so the previous draft remains in history. Update Draft status as appropriate. Do not alter sent-action dates or mark the DM as sent. Then present the revised DM to Adrian and confirm it has been saved to the CRM.';
+}
+async function copyDmReworkPromptForProspect(p,feedback,statusEl){
+  if(!p||!p.first_dm){alert('There is no stored first DM to rework yet.');return}
+  const prompt=buildDmReworkPrompt(p,feedback);
+  try{
+    await navigator.clipboard.writeText(prompt);
+    if(statusEl)statusEl.textContent='Rework prompt copied ✓ Paste it into this Cold Outreach ChatGPT project, then retrieve the updated output when complete.';
+  }catch(e){
+    if(statusEl)statusEl.textContent='⚠️ Could not copy automatically. Please try again or copy the DM manually.';
+  }
+}
+function copyPipelineDmReworkPrompt(i){
+  const p=(window.pipelineProspects||[])[i];
+  const note=document.getElementById('pipelineDmReworkNote'+i);
+  const status=document.getElementById('pipelineDmReworkStatus'+i);
+  return copyDmReworkPromptForProspect(p,note?.value||'',status);
+}
+function copyRetrievedDmReworkPrompt(){
+  const p=window.currentRetrievedProspect;
+  const note=document.getElementById('retrievedDmReworkNote');
+  const status=document.getElementById('retrievedDmReworkStatus');
+  return copyDmReworkPromptForProspect(p,note?.value||'',status);
+}
+function copyDraftText(id){const el=document.getElementById(id);if(!el)return;navigator.clipboard.writeText('value' in el?el.value:el.innerText)}
+async function savePipelineDraft(i,type,elementId){
+  const p=(window.pipelineProspects||[])[i];const el=document.getElementById(elementId);if(!p||!el)return;
+  const content=('value' in el?el.value:el.innerText).trim();if(!content){alert('The draft cannot be blank.');return}
+  const noteId=elementId.startsWith('pipelineComment')?'pipelineCommentNote'+i:'pipelineDmNote'+i;const note=document.getElementById(noteId);
+  try{if(note)note.textContent='Saving changes…';await crmPostWithRetry({action:'updateDraft',capture_id:p.capture_id||'',profile_url:p.profile_url||'',prospect_name:p.name||'',draft_type:type,content:content},1);if(type==='Suggested public comment - Draft')p.public_comment=content;if(type==='Suggested first DM - Draft')p.first_dm=content;p.draft_status='Edited in Companion';if(note)note.textContent='Saved to CRM ✓'}catch(e){if(note)note.textContent='⚠️ '+String(e&&e.message||e||'Could not save changes')}
+}
+async function markPipelineAction(profileEnc,nameEnc,actionName){
+  try{
+    await crmPost({action:'markAction',profile_url:decodeURIComponent(profileEnc),prospect_name:decodeURIComponent(nameEnc),action_name:actionName});
+    await loadPipeline();await loadFollowups();
+  }catch(e){alert(e.message)}
+}
+async function loadFollowups(){
+  const box=document.getElementById('followupList');if(!box)return;
+  try{
+    const d=await crmPost({action:'listProspects'});
+    const ps=(d.prospects||[]).filter(p=>p.next_action||p.connection_sent||p.connected);
+    if(!ps.length){box.innerHTML='<div class="card muted">Nothing needs attention yet.</div>';return}
+    box.innerHTML=ps.map(p=>`<div class="card"><div class="section-title"><h3>${escapeHtml(p.name)}</h3><span class="status">${escapeHtml(statusLabel(p))}</span></div><div class="muted"><strong>Next action:</strong> ${escapeHtml(p.first_dm_sent?(p.next_action||'Follow-up as appropriate'):p.connected?'Send first DM':p.connection_sent?'Waiting for connection acceptance':(p.next_action||'Review'))}</div></div>`).join('');
+  }catch(e){box.innerHTML='<div class="card muted">⚠️ '+escapeHtml(e.message)+'</div>'}
+}
+async function testBackend(){try{await crmPost({action:'health'});document.getElementById('backendState').textContent='✅ CRM connection is working.';}catch(e){document.getElementById('backendState').textContent='⚠️ '+e.message}}
+['profileLink','sourceLink','prospectNotes','newFiles'].forEach(id=>document.getElementById(id)?.addEventListener('change',unlockProspectSave));
+document.querySelectorAll('[data-choice-group]').forEach(group=>group.addEventListener('click',()=>unlockProspectSave()));
+window.addEventListener('DOMContentLoaded',loadBackendSettings);
+let outreachInstallPrompt = null;
+window.addEventListener('beforeinstallprompt',event=>{
+  event.preventDefault();
+  outreachInstallPrompt=event;
+  const banner=document.getElementById('outreachInstallBanner');
+  if(banner && !window.matchMedia('(display-mode: standalone)').matches)banner.style.display='flex';
+});
+document.getElementById('outreachInstallButton')?.addEventListener('click',async()=>{
+  if(!outreachInstallPrompt)return;
+  const prompt=outreachInstallPrompt;
+  outreachInstallPrompt=null;
+  document.getElementById('outreachInstallBanner').style.display='none';
+  try{
+    await prompt.prompt();
+    await prompt.userChoice;
+  }catch(error){
+    console.warn('Install prompt failed:',error);
+  }
+});
+window.addEventListener('appinstalled',()=>{
+  outreachInstallPrompt=null;
+  const banner=document.getElementById('outreachInstallBanner');
+  if(banner)banner.style.display='none';
+});
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js', {scope:'./'})
+    .catch(error => console.warn('Cold Outreach offline shell not available:', error)));
+}
+function setFollowup(days){const d=new Date();d.setDate(d.getDate()+days);document.getElementById('customFollowup').value=d.toISOString().slice(0,10);document.getElementById('followupHint').textContent='Custom follow-up selected. You can overwrite it with any date.'}
+</script>
+</body>
+</html>
