@@ -19,8 +19,8 @@ This is Cold Outreach's own GitHub repository, separate from Appointment Compani
 - Never commit OAuth tokens, workspace keys, screenshot evidence, or prospect personal data into GitHub.
 
 ## Release and upgrade process
-- Current stable standalone install baseline: **v1.2.1** (14 Oct 2026).
-- Prospect record v1.3.0 and the sandbox Apps Script deployment workflow are being preserved as **separate proposed changes**. The v1.3.0 backend is *not* deployed by moving the PWA.
+- Current standalone prospect-record development branch: **v1.3.0** (not yet deployed). The published baseline remains v1.2.1 until this PR is approved.
+- v1.3.0 lets you open a complete prospect record from Pipeline or Follow-ups with notes, draft messages, screenshots, history and next actions. The corresponding new Apps Script backend actions must be deployed before full record editing works.
 - `backend/Code.gs` is a version-controlled copy. The live Google Apps Script is a separate deployment and must be deliberately authorised and updated.
 - Update the app version, `CHANGELOG.md` and service worker cache together for any behaviour, UI or identity change.
 - Keep the previous Appointment Companion-hosted PWA available until the new install has been tested end-to-end.
