@@ -1,8 +1,8 @@
-/* Cold Outreach standalone PWA - release 1.2.1 (14th Oct 2026).
+/* Cold Outreach standalone PWA - release 1.2.2 (14th Oct 2026).
  * Only cache this app's shell. Never cache CRM requests, attachments, credentials or third-party APIs.
  */
-const CACHE_NAME = 'cold-outreach-shell-v1.2.1';
-const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './assets/icon.svg', './assets/icon-192.svg', './assets/icon-512.svg'];
+const CACHE_NAME = 'cold-outreach-shell-v1.2.2';
+const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './assets/icon.svg', './assets/icon-192.svg', './assets/icon-512.svg', './assets/icon-192.png', './assets/icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
