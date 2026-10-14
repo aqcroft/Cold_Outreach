@@ -9,7 +9,7 @@ This is Cold Outreach's own GitHub repository, separate from Appointment Compani
 2. Under **Build and deployment**, select **Deploy from a branch**.
 3. Select **main** and **/(root)**, then **Save**.
 4. When GitHub shows the published URL, open https://aqcroft.github.io/Cold_Outreach/ in Chrome on Android.
-5. Use **Install app** and check that the **Cold Outreach** ice-cube home-screen app appears independently of Appointment Companion.
+5. Use **Install app** and check that the **Cold Outreach** ice-cube home-screen app appears independently of Appointment Companion. This version provides Android-compatible 192px and 512px PNG icons.
 6. Open the installed app, test **CRM connection**, **Pipeline**, a prospect, and a handoff. Keep the previous install until this is working.
 
 ## CRM and settings
@@ -19,7 +19,7 @@ This is Cold Outreach's own GitHub repository, separate from Appointment Compani
 - Never commit OAuth tokens, workspace keys, screenshot evidence, or prospect personal data into GitHub.
 
 ## Release and upgrade process
-- Current stable standalone install baseline: **v1.2.1** (14 Oct 2026).
+- Current stable standalone install baseline: **v1.2.2** (14 Oct 2026).
 - Prospect record v1.3.0 and the sandbox Apps Script deployment workflow are being preserved as **separate proposed changes**. The v1.3.0 backend is *not* deployed by moving the PWA.
 - `backend/Code.gs` is a version-controlled copy. The live Google Apps Script is a separate deployment and must be deliberately authorised and updated.
 - Update the app version, `CHANGELOG.md` and service worker cache together for any behaviour, UI or identity change.
