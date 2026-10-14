@@ -2,7 +2,7 @@
  * Only cache this app's shell. Never cache CRM requests, attachments, credentials or third-party APIs.
  */
 const CACHE_NAME = 'cold-outreach-shell-v1.3.0';
-const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './assets/icon.svg', './assets/icon-192.svg', './assets/icon-512.svg'];
+const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './assets/icon.svg', './assets/icon-192.svg', './assets/icon-512.svg', './assets/icon-192.png', './assets/icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
