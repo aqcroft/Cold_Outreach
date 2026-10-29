@@ -348,6 +348,68 @@ function cleanLinkedInName(name) {
   return String(name || '').replace(/\s+\d{5,}$/,'').trim() || 'Unnamed prospect';
 }
 
+function recordReply(body) {
+  const replyText=String(body.reply_text||'').trim();
+  const replyId=String(body.reply_id||'').trim();
+  if (!replyText) throw new Error('Paste their actual response first.');
+  if (!replyId) throw new Error('Missing reply event ID.');
+  const lock=LockService.getScriptLock();
+  lock.waitLock(25000);
+  try {
+    const ss=SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet=ss.getSheetByName(PROSPECTS_SHEET);
+    const headers=ensureProspectHeaders(sheet);
+    const captureId=String(body.capture_id||'').trim();
+    const profileUrl=String(body.profile_url||'').trim();
+    const requestedName=String(body.prospect_name||'').trim();
+    const last=sheet.getLastRow();
+    let row=0;
+    if (captureId && headers['Last capture ID'] && last>=2) {
+      const hit=sheet.getRange(2,headers['Last capture ID'],last-1,1).createTextFinder(captureId).matchEntireCell(true).findNext();
+      if (hit) row=hit.getRow();
+    }
+    if (!row) row=findProspectRow(sheet,headers,profileUrl,requestedName);
+    if (!row) throw new Error('Prospect not found. A reply cannot create a prospect.');
+    const vals=sheet.getRange(row,1,1,sheet.getLastColumn()).getDisplayValues()[0];
+    const get=h=>headers[h]?vals[headers[h]-1]:'';
+    const name=String(get('Name')||requestedName);
+    const actualProfile=String(get('LinkedIn profile')||profileUrl);
+    if (String(get('Last reply ID'))===replyId) {
+      const fileId=String(get('Latest reply handoff ID')||'');
+      if (fileId) {
+        const file=DriveApp.getFileById(fileId);
+        return {ok:true,already_recorded:true,prospect_name:name,capture_id:String(get('Last capture ID')||captureId),
+          profile_url:actualProfile,handoff_filename:file.getName(),handoff_url:file.getUrl(),
+          handoff_markdown:file.getBlob().getDataAsString(),files:[]};
+      }
+      return {ok:true,already_recorded:true,prospect_name:name,capture_id:String(get('Last capture ID')||captureId),
+        profile_url:actualProfile,files:[]};
+    }
+    const now=new Date();
+    appendHistory(ss,{prospect:name,date:now,direction:'Inbound',type:'Prospect replied',
+      summary:replyText,file:'',linkedin:actualProfile,next:'Process reply handoff',status:'Conversation',
+      notes:'Recorded by Adrian in Companion'});
+    const folder=getOrCreateProspectFolder(name);
+    const handoff=buildHandoffMarkdown({name:name,row:row,captureId:String(get('Last capture ID')||captureId),
+      profileUrl:actualProfile,sourceUrl:String(get('Source post')||''),
+      track:String(get('Track')||''),source:String(get('Source')||''),relationship:String(get('Relationship')||''),
+      notes:String(get('Notes')||''),folderUrl:folder.getUrl(),files:listImageFiles(folder),
+      history:prospectHistory(ss,name),replyText:replyText,refinement:true});
+    const filename='ChatGPT Reply Handoff - '+cleanName(name)+' - '+
+      Utilities.formatDate(now,Session.getScriptTimeZone()||'Europe/London','yyyy-MM-dd_HHmmss')+'.md';
+    const file=folder.createFile(filename,handoff,MimeType.PLAIN_TEXT);
+    writeByHeaders(sheet,headers,row,{'Last reply ID':replyId,'Latest reply handoff ID':file.getId(),
+      'Last prospect reply':now,'Last contact':now,'Status':'Conversation',
+      'Draft status':'Awaiting reply analysis','Next action':'Process reply handoff'});
+    appendHistory(ss,{prospect:name,date:now,direction:'System',type:'Reply ChatGPT handoff created',
+      summary:'Full-history handoff created after a recorded reply.',file:file.getUrl(),linkedin:actualProfile,
+      next:'Process reply handoff',status:'Conversation',notes:''});
+    return {ok:true,prospect_name:name,capture_id:String(get('Last capture ID')||captureId),
+      profile_url:actualProfile,handoff_filename:filename,handoff_url:file.getUrl(),
+      handoff_markdown:handoff,files:[]};
+  } finally {lock.releaseLock()}
+}
+
 function markAction(body) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName(PROSPECTS_SHEET);
@@ -361,6 +423,9 @@ function markAction(body) {
   const now = new Date();
   const action = String(body.action_name || '');
 
+  const completionColumn={comment_sent:'Comment sent',connection_sent:'Connection sent',connected:'Connected',
+    personal_dm_sent:'First personal DM sent',uw_dm_sent:'First UW DM sent',dm_sent:'First UW DM sent'}[action];
+  if (completionColumn && headers[completionColumn] && sheet.getRange(row,headers[completionColumn]).getValue()) return {ok:true,action:action,already_marked:true};
   if (action === 'comment_sent') {
     writeByHeaders(sheet,headers,row,{
       'Comment sent':now,
@@ -394,10 +459,16 @@ function markAction(body) {
       'Connected date':now,
       'Status':'Connected',
       'Last contact':now,
-      'Next action':'Send first UW DM'
+      'Next action':'Review first personal DM'
     });
-    appendHistory(ss,{prospect:actualName,date:now,direction:'External',type:'Connection accepted',summary:'LinkedIn connection accepted.',file:'',linkedin:profileUrl,next:'Send first UW DM',status:'Connected',notes:''});
-  } else if (action === 'dm_sent') {
+    appendHistory(ss,{prospect:actualName,date:now,direction:'External',type:'Connection accepted',summary:'LinkedIn connection accepted.',file:'',linkedin:profileUrl,next:'Review first personal DM',status:'Connected',notes:''});
+  } else if (action === 'personal_dm_sent') {
+    writeByHeaders(sheet,headers,row,{'First personal DM sent':now,'First DM sent date':now,
+      'Status':'Personal conversation','Last contact':now,'Next action':'Wait for a natural reply'});
+    appendHistory(ss,{prospect:actualName,date:now,direction:'Outbound',type:'First personal DM sent',
+      summary:String(body.sent_text||'').trim()||'Adrian confirmed first personal DM sent.',file:'',linkedin:profileUrl,
+      next:'Wait for a natural reply',status:'Personal conversation',notes:''});
+  } else if (action === 'dm_sent' || action === 'uw_dm_sent') {
     writeByHeaders(sheet,headers,row,{
       'First UW DM sent':now,
       'First DM sent date':now,
@@ -454,6 +525,10 @@ function updateDraft(body) {
   const allowed = {
     'Suggested public comment - Draft': true,
     'Suggested first DM - Draft': true,
+    'Suggested first personal DM - Draft': true,
+    'Suggested follow-up response - Draft': true,
+    'Potential UW introduction - Draft': true,
+    'Suggested first UW DM - Draft': true,
     'Connection request instruction - Draft': true
   };
   const type = String(body.draft_type || '').trim();
@@ -480,6 +555,7 @@ function updateDraft(body) {
   const status = headers['Status'] ? String(sheet.getRange(row,headers['Status']).getDisplayValue() || 'New') : 'New';
   const now = new Date();
   appendHistory(ss,{prospect:actualName,date:now,direction:'Outgoing edit',type:type,summary:content,file:'',linkedin:actualProfile,next:next,status:status,notes:'Edited in Partner Companion.'});
+  if (type === 'Suggested first personal DM - Draft') appendHistory(ss,{prospect:actualName,date:now,direction:'Outgoing edit',type:'Suggested first DM - Draft',summary:content,file:'',linkedin:actualProfile,next:next,status:status,notes:'Backwards-compatible first personal DM alias.'});
   writeByHeaders(sheet,headers,row,{'Draft status':'Edited in Companion'});
   return {ok:true,prospect_name:actualName,draft_type:type,content:content};
 }
@@ -647,7 +723,7 @@ function mimeExt(m){return m==='image/png'?'.png':m==='image/webp'?'.webp':m==='
 function ensureProspectHeaders(sheet) {
   let headers = headerMap(sheet);
   [
-    'Last capture ID','Target role','Job preferences','Recommended approach','Analysis summary','Draft status','Initial action date','Connected date','First DM sent date'
+    'Last capture ID','Target role','Job preferences','Recommended approach','Analysis summary','Draft status','Initial action date','Connected date','First DM sent date','First personal DM sent','Last prospect reply','Last reply ID','Latest reply handoff ID'
   ].forEach(name => ensureHeader(sheet, headers, name));
   return headerMap(sheet);
 }
