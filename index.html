@@ -573,6 +573,36 @@ function statusLabel(p){
   if(p.connection_sent)return 'Waiting for connection';
   return p.status||'New';
 }
+function stageDraft(i,key,title,type,content) {
+  if(!content)return '';
+  const id='pipeline'+key+i;
+  return `<div style="margin-top:12px"><div class="section-title"><h3>${escapeHtml(title)}</h3><button class="btn small secondary" onclick="event.stopPropagation();copyDraftText('${id}')">Copy</button></div>
+    <textarea id="${id}" class="draft-edit" onclick="event.stopPropagation()">${escapeHtml(content)}</textarea>
+    <div class="actions" style="margin-top:8px"><button class="btn small good" onclick="event.stopPropagation();savePipelineDraft(${i},'${type}','${id}')">Save changes to CRM</button></div>
+    <div class="draft-save-note" id="${id}Note">Draft only - saving edits does not mark it as sent.</div></div>`;
+}
+async function recordProspectReply(i) {
+  const p=(window.pipelineProspects||[])[i],input=document.getElementById('pipelineReply'+i);
+  const status=document.getElementById('pipelineReplyStatus'+i),button=document.getElementById('pipelineReplyButton'+i);
+  const reply=(input?.value||'').trim();
+  if(!p||!reply){if(status)status.textContent='Paste their actual reply first.';return}
+  if(!confirm('Record this reply from '+p.name+' and create a new ChatGPT handoff?'))return;
+  const id=input.dataset.replyId||(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random());
+  input.dataset.replyId=id;
+  try{
+    button.disabled=true;button.textContent='Recording reply…';
+    const d=await crmPostWithRetry({action:'recordReply',capture_id:p.capture_id||'',profile_url:p.profile_url||'',
+      prospect_name:p.name||'',reply_text:reply,reply_id:id},1);
+    if(!d.handoff_markdown)throw new Error('Reply recorded, but the handoff could not be returned. Check the CRM before trying again.');
+    status.textContent=d.already_recorded?'Already recorded - handoff retrieved ✓':'Reply recorded ✓';
+    input.value='';input.dataset.replyId='';
+    switchTo('new');
+    renderHandoff({...d,profile_url:p.profile_url,source_url:p.source_post});
+  }catch(e){
+    status.textContent='⚠️ '+String(e&&e.message||e||'Unable to record reply')+
+      (/Unknown action/i.test(String(e&&e.message||''))?' - update the live Apps Script backend first.':'');
+  }finally{button.disabled=false;button.textContent='Save reply & create handoff'}
+}
 async function loadPipeline(){
   const box=document.getElementById('pipelineList');if(!box)return;
   box.innerHTML='<div class="card muted">Loading prospects…</div>';
@@ -581,18 +611,30 @@ async function loadPipeline(){
     const ps=d.prospects||[];
     if(!ps.length){box.innerHTML='<div class="card muted">No prospects yet.</div>';return}
     box.innerHTML=ps.map((p,i)=>{
-      const connected=!!p.connected, sent=!!p.connection_sent, dmSent=!!p.first_dm_sent;
-      const next = dmSent ? (p.next_action||'Follow-up as appropriate') : connected ? 'First DM ready' : sent ? 'Waiting for connection acceptance' : (p.next_action||'Review first action');
+      const connected=!!p.connected, sent=!!p.connection_sent, dmSent=!!(p.uw_dm_sent||p.first_dm_sent),personalSent=!!p.personal_dm_sent;
+      const next = p.next_action || (p.prospect_replied?'Review their reply':personalSent?'Await a natural reply':connected?'Review first personal DM':sent?'Waiting for connection acceptance':'Review first action');
       const connectButton = sent && !connected ? `<button class="btn small good" onclick="event.stopPropagation();markPipelineAction('${encodeURIComponent(p.profile_url)}','${encodeURIComponent(p.name)}','connected')">✓ They connected</button>` : '';
       const commentAction = !p.comment_sent ? `<button class="btn small secondary" onclick="event.stopPropagation();markPipelineAction('${encodeURIComponent(p.profile_url)}','${encodeURIComponent(p.name)}','comment_sent')">☐ Comment sent</button>` : '<span class="pill">✓ Comment sent</span>';
       const connectionAction = !p.connection_sent ? `<button class="btn small secondary" onclick="event.stopPropagation();markPipelineAction('${encodeURIComponent(p.profile_url)}','${encodeURIComponent(p.name)}','connection_sent')">☐ Connection request sent</button>` : '<span class="pill">✓ Connection request sent</span>';
       const commentText=tagProspectNameInComment(p.public_comment,p.name);
       const comment = p.public_comment ? `<div style="margin-top:12px"><div class="section-title"><h3>Public comment</h3><button class="btn small secondary" onclick="event.stopPropagation();copyDraftText('pipelineComment${i}')">Copy</button></div><textarea class="draft-edit" id="pipelineComment${i}" onclick="event.stopPropagation()">${escapeHtml(commentText)}</textarea><div class="actions" style="margin-top:8px"><button class="btn small good" onclick="event.stopPropagation();savePipelineDraft(${i},'Suggested public comment - Draft','pipelineComment${i}')">Save changes to CRM</button></div><div class="draft-save-note" id="pipelineCommentNote${i}">Edit here if you want to tweak the wording. Saving creates a new CRM history entry.</div></div>` : '';
       const connection = p.connection_instruction ? `<div style="margin-top:12px"><h3>Connection request</h3><div class="output">${escapeHtml(p.connection_instruction)}</div></div>` : '';
-      const dm = p.first_dm ? `<div style="margin-top:12px"><div class="section-title"><h3>First UW DM${connected?'':' - ready for later'}</h3><button class="btn small secondary" onclick="event.stopPropagation();copyDraftText('pipelineDm${i}')">Copy</button></div><textarea class="draft-edit" id="pipelineDm${i}" onclick="event.stopPropagation()">${escapeHtml(p.first_dm)}</textarea><div class="actions" style="margin-top:8px"><button class="btn small good" onclick="event.stopPropagation();savePipelineDraft(${i},'Suggested first DM - Draft','pipelineDm${i}')">Save changes to CRM</button><button class="btn small accent" onclick="event.stopPropagation();copyPipelineDmReworkPrompt(${i})">🔄 Rework DM</button>${connected&&!dmSent?`<button class="btn small good" onclick="event.stopPropagation();markPipelineAction('${encodeURIComponent(p.profile_url)}','${encodeURIComponent(p.name)}','dm_sent')">✓ DM sent</button>`:''}</div><div class="field" style="margin-top:8px"><label>Want ChatGPT to reconsider anything specific?</label><textarea id="pipelineDmReworkNote${i}" onclick="event.stopPropagation()" placeholder="Optional - e.g. too CV-like, too long, feels salesy"></textarea></div><div class="draft-save-note" id="pipelineDmNote${i}">Edit here if you want to tweak the wording. Saving creates a new CRM history entry.</div><div class="draft-save-note" id="pipelineDmReworkStatus${i}">Rework uses the latest Cold Outreach rules and keeps the previous draft in CRM history.</div></div>` : '';
+      const kind=p.first_dm_kind||(p.personal_dm?'personal':p.first_dm?'legacy':'');
+      const dmType=kind==='personal'?'Suggested first personal DM - Draft':kind==='uw'?'Suggested first UW DM - Draft':'Suggested first DM - Draft';
+      const dmTitle=kind==='personal'?'First PERSONAL DM - draft':kind==='uw'?'First UW DM - explicit-interest exception':'First DM - legacy draft, review before sending';
+      const dm=stageDraft(i,'Dm',dmTitle,dmType,p.personal_dm||p.first_dm);
+      const firstButtons=(p.personal_dm||p.first_dm)&&connected?'<div class="actions" style="margin-top:8px">'
+        +(!personalSent&&kind!=='uw'?'<button class="btn small good" onclick="event.stopPropagation();markPipelineAction(\''+encodeURIComponent(p.profile_url)+'\',\''+encodeURIComponent(p.name)+'\',\'personal_dm_sent\',\'pipelineDm'+i+'\')">✓ Confirm PERSONAL DM sent</button>':'')
+        +(!dmSent&&(kind==='uw'||kind==='legacy')?'<button class="btn small secondary" onclick="event.stopPropagation();markPipelineAction(\''+encodeURIComponent(p.profile_url)+'\',\''+encodeURIComponent(p.name)+'\',\'uw_dm_sent\',\'pipelineDm'+i+'\')">✓ Confirm UW DM sent</button>':'')
+        +'<button class="btn small accent" onclick="event.stopPropagation();copyPipelineDmReworkPrompt('+i+')">🔄 Rework DM</button></div>'
+        +'<div class="field"><label>Want ChatGPT to reconsider anything?</label><textarea id="pipelineDmReworkNote'+i+'" onclick="event.stopPropagation()" placeholder="Optional feedback"></textarea></div><div class="draft-save-note" id="pipelineDmReworkStatus'+i+'">Rework retains the earlier draft in CRM history.</div>':'';
+      const followup=stageDraft(i,'Followup','Suggested follow-up response - draft','Suggested follow-up response - Draft',p.followup_dm);
+      const uw=stageDraft(i,'UwIntro','Potential UW introduction - only if relevant','Potential UW introduction - Draft',p.uw_intro);
+      const uwButton=p.uw_intro&&!dmSent?'<div class="actions" style="margin-top:8px"><button class="btn small secondary" onclick="event.stopPropagation();markPipelineAction(\''+encodeURIComponent(p.profile_url)+'\',\''+encodeURIComponent(p.name)+'\',\'uw_dm_sent\',\'pipelineUwIntro'+i+'\')">✓ Confirm first UW DM sent</button></div>':'';
+      const reply='<details style="margin-top:14px" onclick="event.stopPropagation()"><summary style="cursor:pointer;font-weight:700">💬 They replied!</summary><p class="muted" style="margin:8px 0">Paste their reply to create a new ChatGPT handoff using the whole relationship history. No automatic UW introduction.</p><textarea class="draft-edit" id="pipelineReply'+i+'" oninput="this.dataset.replyId=\'\'" onclick="event.stopPropagation()" placeholder="Paste their actual reply…"></textarea><div class="actions" style="margin-top:8px"><button class="btn small accent" id="pipelineReplyButton'+i+'" onclick="event.stopPropagation();recordProspectReply('+i+')">Save reply & create handoff</button></div><div class="draft-save-note" id="pipelineReplyStatus'+i+'">Nothing is recorded without your confirmation.</div></details>';
       const links = `<div class="actions" style="margin-top:10px">${p.source_post?`<a class="btn small secondary" href="${escapeHtml(p.source_post)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open original post</a>`:''}${p.profile_url?`<a class="btn small secondary" href="${escapeHtml(p.profile_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open profile</a>`:''}${p.folder_url?`<a class="btn small secondary" href="${escapeHtml(p.folder_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Files</a>`:''}${connectButton}</div>`;
       const actions = `<div class="actions" style="margin-top:10px">${commentAction}${connectionAction}</div>`;
-      return `<div class="card pipeline-card" onclick="togglePipelineCard(event,${i})"><div class="section-title"><div><h3>${escapeHtml(p.name)}</h3><div class="meta">${escapeHtml(p.source||'')} · ${escapeHtml(p.track||'')} · ${escapeHtml(p.relationship||'')}</div></div><span class="status">${escapeHtml(statusLabel(p))}</span></div><div class="muted" style="margin-top:8px"><strong>Next:</strong> ${escapeHtml(next)}</div><div class="pipeline-toggle"></div><div class="pipeline-details">${links}${comment}${actions}${connection}${dm}</div></div>`;
+      return `<div class="card pipeline-card" onclick="togglePipelineCard(event,${i})"><div class="section-title"><div><h3>${escapeHtml(p.name)}</h3><div class="meta">${escapeHtml(p.source||'')} · ${escapeHtml(p.track||'')} · ${escapeHtml(p.relationship||'')}</div></div><span class="status">${escapeHtml(statusLabel(p))}</span></div><div class="muted" style="margin-top:8px"><strong>Next:</strong> ${escapeHtml(next)}</div><div class="pipeline-toggle"></div><div class="pipeline-details">${links}${comment}${actions}${connection}${dm}${firstButtons}${followup}${uw}${uwButton}${reply}</div></div>`;
     }).join('');
     window.pipelineProspects=ps;
   }catch(e){box.innerHTML='<div class="card muted">⚠️ '+escapeHtml(e.message)+'</div>'}
@@ -635,8 +677,8 @@ function copyDraftText(id){const el=document.getElementById(id);if(!el)return;na
 async function savePipelineDraft(i,type,elementId){
   const p=(window.pipelineProspects||[])[i];const el=document.getElementById(elementId);if(!p||!el)return;
   const content=('value' in el?el.value:el.innerText).trim();if(!content){alert('The draft cannot be blank.');return}
-  const noteId=elementId.startsWith('pipelineComment')?'pipelineCommentNote'+i:'pipelineDmNote'+i;const note=document.getElementById(noteId);
-  try{if(note)note.textContent='Saving changes…';await crmPostWithRetry({action:'updateDraft',capture_id:p.capture_id||'',profile_url:p.profile_url||'',prospect_name:p.name||'',draft_type:type,content:content},1);if(type==='Suggested public comment - Draft')p.public_comment=content;if(type==='Suggested first DM - Draft')p.first_dm=content;p.draft_status='Edited in Companion';if(note)note.textContent='Saved to CRM ✓'}catch(e){if(note)note.textContent='⚠️ '+String(e&&e.message||e||'Could not save changes')}
+  const noteId=elementId+'Note';const note=document.getElementById(noteId);
+  try{if(note)note.textContent='Saving changes…';await crmPostWithRetry({action:'updateDraft',capture_id:p.capture_id||'',profile_url:p.profile_url||'',prospect_name:p.name||'',draft_type:type,content:content},1);if(type==='Suggested public comment - Draft')p.public_comment=content;if(type==='Suggested first DM - Draft'||type==='Suggested first personal DM - Draft'||type==='Suggested first UW DM - Draft')p.first_dm=content;if(type==='Suggested first personal DM - Draft')p.personal_dm=content;if(type==='Suggested follow-up response - Draft')p.followup_dm=content;if(type==='Potential UW introduction - Draft')p.uw_intro=content;p.draft_status='Edited in Companion';if(note)note.textContent='Saved to CRM ✓'}catch(e){if(note)note.textContent='⚠️ '+String(e&&e.message||e||'Could not save changes')}
 }
 async function markPipelineAction(profileEnc,nameEnc,actionName){
   try{
