@@ -5,7 +5,7 @@ const HISTORY_SHEET = 'Conversation History';
 const KEY_PROPERTY = 'CRM_WORKSPACE_KEY';
 function doGet(e) {
   if ((e.parameter.action || '') === 'health') {
-    return json({ok:true, service:'Cold Outreach CRM'});
+    return json({ok:true, service:'Cold Outreach CRM', version:'1.3.0', capabilities:['recordReply','typedDrafts','personalSent']});
   }
   return json({ok:false,error:'Unsupported GET action'});
 }
@@ -15,7 +15,7 @@ function doPost(e) {
     const body = JSON.parse(e.postData.contents || '{}');
     requireKey(body.workspace_key);
     const action = body.action || '';
-    if (action === 'health') return json({ok:true});
+    if (action === 'health') return json({ok:true,version:'1.3.0',capabilities:['recordReply','typedDrafts','personalSent']});
     if (action === 'saveProspect') return json(saveProspect(body));
     if (action === 'addHistory') return json(addHistory(body));
     if (action === 'markAction') return json(markAction(body));
