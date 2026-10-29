@@ -299,8 +299,8 @@ function renderHandoff(d){
   document.getElementById('processedTitle').textContent=(d.prospect_name||'Prospect')+' handoff ready ✓';
 
   const report=[
-    '📁 '+((d.files||[]).length)+' screenshot'+(((d.files||[]).length)===1?'':'s')+' saved to Drive',
-    '📊 CRM record created / updated',
+    (String(d.handoff_filename||'').includes('Reply Handoff')?'💬 Their reply and full previous history saved in the handoff':'📁 '+((d.files||[]).length)+' screenshot'+(((d.files||[]).length)===1?'':'s')+' saved to Drive'),
+    '📊 Existing CRM prospect created / updated without resetting sent history',
     '📝 ChatGPT handoff .md created',
     '🔗 Prospect folder linked',
     '🧠 Analysis + drafting will happen in this ChatGPT project'
@@ -371,6 +371,7 @@ async function retrieveChatGPTOutput(){
      const firstType=p.personal_dm?'Suggested first personal DM - Draft':p.first_dm_kind==='uw'?'Suggested first UW DM - Draft':'Suggested first DM - Draft';
      const firstTitle=p.personal_dm?'First PERSONAL DM':p.first_dm_kind==='uw'?'First UW DM - explicit-interest exception':'First DM (legacy - check before sending)';
     box.innerHTML='<div class="section-title"><h3>ChatGPT output ✓</h3><span class="pill">'+escapeHtml(p.draft_status||'Draft ready')+'</span></div>'
+       +(p.reply_pending?'<div class="output" style="margin-top:10px">New reply recorded - waiting for ChatGPT to write the fresh follow-up. Earlier drafts below are historical, not a response to this new reply.</div>':'')
       +editableSection('Public comment',taggedComment,'retrievedComment','Suggested public comment - Draft','retrievedCommentNote')
       +actionControls
       +'<div class="actions" style="margin-top:8px">'
@@ -379,7 +380,7 @@ async function retrieveChatGPTOutput(){
       +'</div>'
       +readOnlySection('Connection request',p.connection_instruction,'retrievedConnection')
       +editableSection(firstTitle,p.personal_dm||p.first_dm,'retrievedDm',firstType,'retrievedDmNote')
-       +editableSection('Suggested follow-up to their reply',p.followup_dm,'retrievedFollowup','Suggested follow-up response - Draft','retrievedFollowupNote')
+       +editableSection('Suggested follow-up to their reply',p.reply_pending?'':p.followup_dm,'retrievedFollowup','Suggested follow-up response - Draft','retrievedFollowupNote')
        +editableSection('Potential UW introduction - only if relevant',p.uw_intro,'retrievedUwIntro','Potential UW introduction - Draft','retrievedUwIntroNote')
       +(p.first_dm?'<div class="field" style="margin-top:10px"><label>Want ChatGPT to reconsider anything specific?</label><textarea id="retrievedDmReworkNote" placeholder="Optional - e.g. too CV-like, too long, feels salesy"></textarea></div><div class="actions" style="margin-top:8px"><button class="btn small accent" onclick="copyRetrievedDmReworkPrompt()">🔄 Rework DM</button></div><div class="draft-save-note" id="retrievedDmReworkStatus">Runs the current DM back through the latest Cold Outreach rules and keeps the previous draft in CRM history.</div>':'')
       +'<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">'
@@ -628,7 +629,7 @@ async function loadPipeline(){
         +(!dmSent&&(kind==='uw'||kind==='legacy')?'<button class="btn small secondary" onclick="event.stopPropagation();markPipelineAction(\''+encodeURIComponent(p.profile_url)+'\',\''+encodeURIComponent(p.name)+'\',\'uw_dm_sent\',\'pipelineDm'+i+'\')">✓ Confirm UW DM sent</button>':'')
         +'<button class="btn small accent" onclick="event.stopPropagation();copyPipelineDmReworkPrompt('+i+')">🔄 Rework DM</button></div>'
         +'<div class="field"><label>Want ChatGPT to reconsider anything?</label><textarea id="pipelineDmReworkNote'+i+'" onclick="event.stopPropagation()" placeholder="Optional feedback"></textarea></div><div class="draft-save-note" id="pipelineDmReworkStatus'+i+'">Rework retains the earlier draft in CRM history.</div>':'';
-      const followup=stageDraft(i,'Followup','Suggested follow-up response - draft','Suggested follow-up response - Draft',p.followup_dm);
+      const followup=p.reply_pending?'<div class="muted" style="margin-top:10px">💬 Reply recorded - fresh follow-up draft awaiting ChatGPT.</div>':stageDraft(i,'Followup','Suggested follow-up response - draft','Suggested follow-up response - Draft',p.followup_dm);
       const uw=stageDraft(i,'UwIntro','Potential UW introduction - only if relevant','Potential UW introduction - Draft',p.uw_intro);
       const uwButton=p.uw_intro&&!dmSent?'<div class="actions" style="margin-top:8px"><button class="btn small secondary" onclick="event.stopPropagation();markPipelineAction(\''+encodeURIComponent(p.profile_url)+'\',\''+encodeURIComponent(p.name)+'\',\'uw_dm_sent\',\'pipelineUwIntro'+i+'\')">✓ Confirm first UW DM sent</button></div>':'';
       const reply='<details style="margin-top:14px" onclick="event.stopPropagation()"><summary style="cursor:pointer;font-weight:700">💬 They replied!</summary><p class="muted" style="margin:8px 0">Paste their reply to create a new ChatGPT handoff using the whole relationship history. No automatic UW introduction.</p><textarea class="draft-edit" id="pipelineReply'+i+'" oninput="this.dataset.replyId=\'\'" onclick="event.stopPropagation()" placeholder="Paste their actual reply…"></textarea><div class="actions" style="margin-top:8px"><button class="btn small accent" id="pipelineReplyButton'+i+'" onclick="event.stopPropagation();recordProspectReply('+i+')">Save reply & create handoff</button></div><div class="draft-save-note" id="pipelineReplyStatus'+i+'">Nothing is recorded without your confirmation.</div></details>';
