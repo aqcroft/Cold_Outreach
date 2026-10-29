@@ -37,7 +37,7 @@ main{padding:16px 14px 100px}.view{display:none}.view.active{display:block}.stac
 <body>
 <div class="app">
 <header>
-  <div class="brand"><div class="brand-lockup"><img class="brand-icon" src="./assets/icon.svg" alt="" width="44" height="44" /><div><h1>Cold Outreach</h1><div class="sub">UW Partner toolkit - Relationship follow-up</div></div></div><span class="pill">v1.2.2</span></div>
+  <div class="brand"><div class="brand-lockup"><img class="brand-icon" src="./assets/icon.svg" alt="" width="44" height="44" /><div><h1>Cold Outreach</h1><div class="sub">UW Partner toolkit - Relationship follow-up</div></div></div><span class="pill">v1.3.0</span></div>
   <div class="tabs">
     <button class="tab active" data-view="new">New prospect</button>
     <button class="tab" data-view="pipeline">Pipeline</button>
@@ -141,7 +141,7 @@ main{padding:16px 14px 100px}.view{display:none}.view.active{display:block}.stac
 <section class="view" id="pipeline">
 <div class="stack">
   <div class="card">
-    <div class="section-title"><div><h2>Pipeline</h2><div class="muted">Come back here when somebody accepts, replies or needs the next action.</div></div><button class="btn small secondary" onclick="loadPipeline()">Refresh</button></div>
+    <div class="section-title"><div><h2>Pipeline</h2><div class="muted">Drafts, confirmed sent actions and replies in one place. Nothing gets marked sent automatically.</div></div><button class="btn small secondary" onclick="loadPipeline()">Refresh</button></div>
   </div>
   <div id="pipelineList" class="stack"><div class="card muted">Loading prospects…</div></div>
 </div>
@@ -156,8 +156,8 @@ main{padding:16px 14px 100px}.view{display:none}.view.active{display:block}.stac
 </div>
 </section>
 <details class="card" style="margin-top:18px" id="aboutOutreach">
-  <summary style="cursor:pointer;font-weight:700">About Cold Outreach - v1.2.2</summary>
-  <p class="muted" style="margin-bottom:6px">14th Oct 2026 - Independent Cold Outreach installation with proper 192px and 512px PNG icons for Android. The existing CRM and settings remain unchanged.</p>
+  <summary style="cursor:pointer;font-weight:700">About Cold Outreach - v1.3.0</summary>
+  <p class="muted" style="margin-bottom:6px">29th Oct 2026 - Relationship-first outreach, separate personal and UW stages, and a They replied! handoff with the full conversation history.</p>
   <p class="muted" style="margin:0 0 6px">Your existing CRM, screenshots, ChatGPT handoffs and connection settings are unchanged. An internet connection is still needed to save or retrieve CRM data.</p>
   <p class="muted" style="margin:0">Install from Chrome's browser menu (Install app / Add to Home screen) or Safari's Share menu (Add to Home Screen).</p>
 </details>
@@ -283,8 +283,8 @@ let currentHandoff=null;
 function renderHandoff(d){
   currentSavedProspect={
     name:d.prospect_name||'',
-    profile_url:document.getElementById('profileLink').value.trim(),
-    source_url:document.getElementById('sourceLink').value.trim(),
+    profile_url:d.profile_url||document.getElementById('profileLink').value.trim(),
+    source_url:d.source_url||document.getElementById('sourceLink').value.trim(),
     row:d.row||null,
     capture_id:d.capture_id||localStorage.getItem('acOutreachLastCaptureId')||''
   };
@@ -292,7 +292,7 @@ function renderHandoff(d){
 
   const ref=(d.capture_id||localStorage.getItem('acOutreachLastCaptureId')||'').slice(0,8).toUpperCase();
   const prospectName=String(d.prospect_name||currentSavedProspect?.name||'').trim();
-  const prompt=(prospectName?prospectName+' - ':'')+'Process the Cold Outreach CRM handoff '+(ref?ref+': ':'')+currentHandoff.filename+'. Find that exact handoff in the connected Google Drive, follow its instructions, use the saved screenshots as the evidence, do not research the LinkedIn URLs, and write the completed analysis and drafts back to the CRM so the Companion can retrieve them.';
+  const prompt=(prospectName?prospectName+' - ':'')+'Process the Cold Outreach CRM handoff '+(ref?ref+': ':'')+currentHandoff.filename+'. Find that exact handoff in the connected Google Drive, follow its relationship-first instructions, use saved screenshots and conversation history as the evidence, do not research LinkedIn URLs, and write only appropriate stage-specific drafts back to the SAME CRM prospect. Personal connection first; never an automatic UW DM.';
 
   const card=document.getElementById('analysisOutput');
   card.style.display='block';
@@ -354,7 +354,7 @@ async function retrieveChatGPTOutput(){
       p=ps.find(x=>(capture&&x.capture_id===capture)||(currentSavedProspect.profile_url&&x.profile_url===currentSavedProspect.profile_url));
     }
     if(!p)throw new Error('This prospect could not be found in the CRM.');
-    const ready=!!(p.public_comment||p.connection_instruction||p.first_dm);
+    const ready=!!(p.public_comment||p.connection_instruction||p.first_dm||p.personal_dm||p.followup_dm||p.uw_intro);
     box.style.display='block';
     if(!ready){
       box.innerHTML='<div class="output">ChatGPT output is not in the CRM yet. Finish processing the handoff in ChatGPT, then tap Retrieve ChatGPT output again.</div>';
@@ -368,6 +368,8 @@ async function retrieveChatGPTOutput(){
       +(!p.connection_sent?'<button class="btn small secondary" onclick="markAndRefreshRetrieved(\''+encodeURIComponent(p.profile_url)+'\',\''+encodeURIComponent(p.name)+'\',\'connection_sent\')">☐ Connection request sent</button>':'<span class="pill">✓ Connection request sent</span>')
       +'</div>';
     const taggedComment=tagProspectNameInComment(p.public_comment,p.name);
+     const firstType=p.personal_dm?'Suggested first personal DM - Draft':p.first_dm_kind==='uw'?'Suggested first UW DM - Draft':'Suggested first DM - Draft';
+     const firstTitle=p.personal_dm?'First PERSONAL DM':p.first_dm_kind==='uw'?'First UW DM - explicit-interest exception':'First DM (legacy - check before sending)';
     box.innerHTML='<div class="section-title"><h3>ChatGPT output ✓</h3><span class="pill">'+escapeHtml(p.draft_status||'Draft ready')+'</span></div>'
       +editableSection('Public comment',taggedComment,'retrievedComment','Suggested public comment - Draft','retrievedCommentNote')
       +actionControls
@@ -376,7 +378,9 @@ async function retrieveChatGPTOutput(){
       +(p.profile_url?'<a class="btn small secondary" href="'+escapeHtml(p.profile_url)+'" target="_blank">Open profile</a>':'')
       +'</div>'
       +readOnlySection('Connection request',p.connection_instruction,'retrievedConnection')
-      +editableSection('First UW DM - ready for later',p.first_dm,'retrievedDm','Suggested first DM - Draft','retrievedDmNote')
+      +editableSection(firstTitle,p.personal_dm||p.first_dm,'retrievedDm',firstType,'retrievedDmNote')
+       +editableSection('Suggested follow-up to their reply',p.followup_dm,'retrievedFollowup','Suggested follow-up response - Draft','retrievedFollowupNote')
+       +editableSection('Potential UW introduction - only if relevant',p.uw_intro,'retrievedUwIntro','Potential UW introduction - Draft','retrievedUwIntroNote')
       +(p.first_dm?'<div class="field" style="margin-top:10px"><label>Want ChatGPT to reconsider anything specific?</label><textarea id="retrievedDmReworkNote" placeholder="Optional - e.g. too CV-like, too long, feels salesy"></textarea></div><div class="actions" style="margin-top:8px"><button class="btn small accent" onclick="copyRetrievedDmReworkPrompt()">🔄 Rework DM</button></div><div class="draft-save-note" id="retrievedDmReworkStatus">Runs the current DM back through the latest Cold Outreach rules and keeps the previous draft in CRM history.</div>':'')
       +'<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">'
       +'<h3>Add more evidence / refine this prospect</h3>'
@@ -413,7 +417,10 @@ async function saveRetrievedDraft(type,elementId,noteId){
       content:content
     },1);
     if(type==='Suggested public comment - Draft')p.public_comment=content;
-    if(type==='Suggested first DM - Draft')p.first_dm=content;
+    if(type==='Suggested first DM - Draft'||type==='Suggested first personal DM - Draft'||type==='Suggested first UW DM - Draft')p.first_dm=content;
+     if(type==='Suggested first personal DM - Draft')p.personal_dm=content;
+     if(type==='Suggested follow-up response - Draft')p.followup_dm=content;
+     if(type==='Potential UW introduction - Draft')p.uw_intro=content;
     p.draft_status='Edited in Companion';
     if(note)note.textContent='Saved to CRM ✓';
   }catch(e){
@@ -559,7 +566,9 @@ function clearProspectForm(){
 
 function escapeHtml(s){return safeText(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function statusLabel(p){
-  if(p.first_dm_sent)return 'DM sent';
+  if(p.uw_dm_sent||p.first_dm_sent)return 'UW DM sent';
+  if(p.prospect_replied)return 'Replied';
+  if(p.personal_dm_sent)return 'Personal DM sent';
   if(p.connected)return 'Connected';
   if(p.connection_sent)return 'Waiting for connection';
   return p.status||'New';
