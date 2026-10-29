@@ -477,7 +477,7 @@ function markAction(body) {
       'Next action':'Follow up in about 1 week if no reply',
       'Follow-up date':new Date(now.getTime()+7*24*60*60*1000)
     });
-    appendHistory(ss,{prospect:actualName,date:now,direction:'Outbound',type:'First UW DM sent',summary:'Stored first DM marked as sent.',file:'',linkedin:profileUrl,next:'Follow up in about 1 week if no reply',status:'DM sent',notes:''});
+    appendHistory(ss,{prospect:actualName,date:now,direction:'Outbound',type:'First UW DM sent',summary:String(body.sent_text || '').trim() || 'Adrian confirmed first UW DM sent.',file:'',linkedin:profileUrl,next:'Follow up in about 1 week if no reply',status:'DM sent',notes:''});
   } else {
     throw new Error('Unknown action.');
   }
@@ -514,6 +514,7 @@ function listProspects() {
       personal_dm_sent:!!get('First personal DM sent'),
       uw_dm_sent:!!get('First UW DM sent'),
       prospect_replied:!!get('Last prospect reply'),
+      reply_pending:String(get('Draft status')||'').indexOf('Awaiting reply analysis')===0,
       public_comment:(drafts[name.toLowerCase()] || {}).public_comment || '',
       connection_instruction:(drafts[name.toLowerCase()] || {}).connection_instruction || '',
       first_dm:(drafts[name.toLowerCase()] || {}).first_dm || '',
@@ -611,6 +612,7 @@ function getProspectOutput(body) {
       personal_dm_sent:!!get('First personal DM sent'),
       uw_dm_sent:!!get('First UW DM sent'),
       prospect_replied:!!get('Last prospect reply'),
+      reply_pending:String(get('Draft status')||'').indexOf('Awaiting reply analysis')===0,
       public_comment:drafts.public_comment || '',
       connection_instruction:drafts.connection_instruction || '',
       first_dm:drafts.first_dm || '',
