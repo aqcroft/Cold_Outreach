@@ -19,11 +19,22 @@ This is Cold Outreach's own GitHub repository, separate from Appointment Compani
 - Never commit OAuth tokens, workspace keys, screenshot evidence, or prospect personal data into GitHub.
 
 ## Release and upgrade process
-- Current stable standalone install baseline: **v1.2.2** (14 Oct 2026).
-- Prospect record v1.3.0 and the sandbox Apps Script deployment workflow are being preserved as **separate proposed changes**. The v1.3.0 backend is *not* deployed by moving the PWA.
+- Standalone PWA source version: **v1.3.0** (29 Oct 2026), with relationship-first personal messaging and separate reply/UW stages.
+- The v1.3.0 backend source is implemented here, but **not deployed by a GitHub change**. Update the existing Google Apps Script web-app deployment deliberately before treating the reply workflow as live. The app reports unknown actions if the backend is older.
 - `backend/Code.gs` is a version-controlled copy. The live Google Apps Script is a separate deployment and must be deliberately authorised and updated.
 - Update the app version, `CHANGELOG.md` and service worker cache together for any behaviour, UI or identity change.
 - Keep the previous Appointment Companion-hosted PWA available until the new install has been tested end-to-end.
 
 ## Development
 See `AGENTS.md` for guardrails and `backend/SETUP.md` for Google CRM setup.
+
+## v1.3.0 relationship-first workflow
+1. Capture the prospect and saved screenshot evidence (do not browse LinkedIn URLs).
+2. Read the ChatGPT handoff: supportive comment when relevant, standard connection request without a note, and an authentic first **personal** DM when appropriate.
+3. Only mark the comment, connection or DM as sent when you actually did it. The labels distinguish personal DMs and UW DMs.
+4. If the person replies, open their Pipeline card and select **💬 They replied!**. Paste the actual response, confirm, and copy the resulting fresh handoff prompt. The handoff contains the full saved relationship history.
+5. Retrieve the stage-specific ChatGPT response. Only consider a UW introduction when the conversation provides a legitimate reason. Historical/untyped DM entries are labelled legacy rather than silently treated as personal-first.
+
+The original `Suggested first DM - Draft` Conversation History type is preserved for old clients; new personal-first handoffs append it alongside `Suggested first personal DM - Draft`. The backend retrieves the typed draft preferentially, but falls back to older entries. No existing prospect or sent-action history is migrated or deleted.
+
+Run `node --test tests/*.test.cjs` as the automated non-destructive regression suite. Deploy the Apps Script source separately using `backend/SETUP.md` and check a dummy/test prospect before using the reply actions on real people.

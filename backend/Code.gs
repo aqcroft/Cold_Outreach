@@ -5,7 +5,7 @@ const HISTORY_SHEET = 'Conversation History';
 const KEY_PROPERTY = 'CRM_WORKSPACE_KEY';
 function doGet(e) {
   if ((e.parameter.action || '') === 'health') {
-    return json({ok:true, service:'Cold Outreach CRM'});
+    return json({ok:true, service:'Cold Outreach CRM', version:'1.3.0', capabilities:['recordReply','typedDrafts','personalSent']});
   }
   return json({ok:false,error:'Unsupported GET action'});
 }
@@ -15,7 +15,7 @@ function doPost(e) {
     const body = JSON.parse(e.postData.contents || '{}');
     requireKey(body.workspace_key);
     const action = body.action || '';
-    if (action === 'health') return json({ok:true});
+    if (action === 'health') return json({ok:true,version:'1.3.0',capabilities:['recordReply','typedDrafts','personalSent']});
     if (action === 'saveProspect') return json(saveProspect(body));
     if (action === 'addHistory') return json(addHistory(body));
     if (action === 'markAction') return json(markAction(body));
@@ -23,6 +23,7 @@ function doPost(e) {
     if (action === 'getProspectOutput') return json(getProspectOutput(body));
     if (action === 'updateDraft') return json(updateDraft(body));
     if (action === 'addEvidence') return json(addEvidence(body));
+    if (action === 'recordReply') return json(recordReply(body));
     return json({ok:false,error:'Unknown action'});
   } catch (err) {
     return json({ok:false,error:String(err && err.message || err)});
@@ -96,7 +97,7 @@ function saveProspect(body) {
     values['Next action'] = 'Process ChatGPT handoff';
     values['Customer angle'] = 'Not raised';
     values['North Star'] = p.track === 'Redundancy / job seeker' ? 'Gold Standard 1' : '';
-    values['Primary objective'] = p.track === 'Potential customer' ? 'Customer savings' : 'Partner opportunity';
+    values['Primary objective'] = p.track === 'Potential customer' ? 'Customer savings' : 'Relationship first - assess relevance';
   } else {
     const currentStatus = headers['Status'] ? String(sheet.getRange(existingRow, headers['Status']).getDisplayValue() || '') : '';
     if (!currentStatus || currentStatus === 'New') values['Next action'] = 'Process revised ChatGPT handoff';
@@ -126,6 +127,7 @@ function saveProspect(body) {
     notes:String(p.notes || '').trim(),
     folderUrl:folder.getUrl(),
     files:allEvidence,
+    history:prospectHistory(ss,name),
     refinement:!!existingRow
   });
 
@@ -210,6 +212,7 @@ function addEvidence(body) {
     notes:mergedNotes,
     folderUrl:folder.getUrl(),
     files:allEvidence,
+    history:prospectHistory(ss,name),
     refinement:true
   });
 
@@ -266,61 +269,145 @@ function listImageFiles(folder) {
   return out;
 }
 
+function prospectHistory(ss, name) {
+  const sheet = ss.getSheetByName(HISTORY_SHEET);
+  const last = sheet.getLastRow();
+  if (last < 2 || !name) return [];
+  return sheet.getRange(2,1,last-1,10).getDisplayValues()
+    .filter(r=>String(r[0]||'').trim().toLowerCase() === String(name).trim().toLowerCase())
+    .map(r=>({date:r[1],direction:r[2],type:r[3],summary:r[4],file:r[5],next:r[7],notes:r[9]}));
+}
 function buildHandoffMarkdown(x) {
-  const fileLines = (x.files || []).map((f,i) =>
-    '- Screenshot ' + (i+1) + ': ' + f.name + '\n  - Drive URL: ' + f.url
+  const isReply=!!x.replyText;
+  const files=(x.files||[]).map((f,i)=>'- Screenshot '+(i+1)+': '+f.name+' | '+f.url).join('\n');
+  const history=(x.history||[]).map((h,i)=>
+    '- '+(i+1)+'. ['+(h.date||'undated')+'] '+(h.type||'History')+' ('+(h.direction||'')+'): '+(h.summary||'')+
+    (h.notes?' | Notes: '+h.notes:'')+(h.file?' | File: '+h.file:'')
   ).join('\n');
-
   return [
-    '# Cold Outreach Prospect Handoff',
+    '# Cold Outreach Prospect Handoff - '+(isReply?'They replied!':'Personal-first assessment'),
     '',
-    x.refinement ? '## Revised capture\nThis is a refreshed handoff for an existing CRM prospect. Use ALL screenshot evidence listed below, including earlier screenshots plus the newly added evidence/context. Reassess the prospect and write fresh analysis/drafts back to the same CRM row. The newest draft entries should supersede earlier suggested drafts without deleting the history.\n' : '',
-    '## Instruction',
-    'Process this prospect using the Cold Outreach relationship-first project instructions already available in this ChatGPT project.',
+    x.refinement?'Existing prospect: refresh the analysis without creating a new prospect or deleting previous drafts, history, or sent dates.':'',
+    '## Essential approach',
+    'Relationship first. Business second. This is not a recruitment funnel. Aim for a genuinely worthwhile interaction even if UW is never relevant.',
+    'Analyse saved screenshots and FULL conversation history deeply but reference evidence lightly. Never invent profile details, interests, shared experiences, sympathy or motives.',
+    '**Do not browse or research the LinkedIn URLs.** Saved screenshots and Adrian-provided context are the designated evidence. The URLs are CRM/navigation references only.',
+    'Use natural British English, simple hyphens, warmth and lightly cheeky humour where appropriate. No CV recital, corporate language or disguised sales pitches.',
     '',
-    'Read the linked prospect screenshots/files from the connected Google Drive. Treat those screenshots plus the capture context below as the factual source material. Analyse only what they support. Do not invent missing facts.',
+    '## Outreach decision sequence',
+    '1. Assess why this person, why now, their actual goals and interests, the relationship context and whether outreach would be appropriate.',
+    '2. Recommend ONE path: supportive comment only; comment plus connection; personal first DM; continue their conversation; learn more; permission-based UW introduction; relationship-building first; or no approach.',
+    '3. For a relevant LinkedIn post, suggest a sincere personalised public comment that stands alone and does not mention UW unless Adrian explicitly asks. Prefix a name with @ only if Adrian can tag them.',
+    '4. Normally suggest a standard connection request WITHOUT a note. Never assume it was sent or accepted.',
+    '5. After acceptance, default to a FIRST PERSONAL DM focused on a genuine point of shared interest, experience, local link or thoughtful observation. One natural, easy question if appropriate, but no question is also fine. Do NOT introduce UW automatically.',
+    '6. If a prospect has replied, carefully consider their actual reply with the FULL history. Continue personally, explore their interests, introduce UW with permission only if truly relevant, or avoid UW altogether. Do not force the next funnel stage.',
+    '7. Exception: a transparent first UW DM can be better if they explicitly asked about UW, previously discussed it with Adrian, or expressed clear interest in relevant additional income. Briefly explain why. UW is potential additional income alongside work, family or job hunting - NEVER a replacement for the role/career they actually want. No earnings promises; one small permission-based ask and an easy no.',
+    '8. If no good reason exists for a personal DM, propose relationship-building or no approach instead of manufacturing a message.',
     '',
-    '**Do not browse the web or research the LinkedIn profile/source URLs.** The URLs are CRM/navigation references only. Do not open them unless Adrian explicitly asks for external research. This handoff is intentionally designed to be processed from the screenshots and supplied context.',
-    '',
-    'Then:',
-    '1. Assess what happened, what the person appears to want, the relationship context, and whether UW is genuinely relevant.',
-    '2. Choose the appropriate route: approach, relationship-building first, supportive comment only, or no approach.',
-    '3. For LinkedIn outreach, draft the public comment first. Do not mention UW publicly unless the context specifically warrants it. If the prospect\'s name appears in the public comment, prefix it with @ so Adrian can tag them easily (for example, @Mark).',
-    '4. Draft the connection-request instruction. Normally this is a standard connection request with no note.',
-    '5. Draft the first UW DM only if appropriate. For job seekers, explicitly protect the role/career they actually want and position UW only alongside it.',
-    '6. Present the copy-ready public comment and, separately, the stored first DM.',
-    '6a. When writing Conversation History, use these exact Type labels so the Companion can retrieve the output: `Suggested public comment - Draft`, `Connection request instruction - Draft`, and `Suggested first DM - Draft`.',
-    '7. Update the main Google Sheet Prospects row identified below. Populate Situation, Why relevant, Target role, Job preferences, Recommended approach, Analysis summary, Draft status, Status and Next action as appropriate.',
-    '8. Append Conversation History entries for the analysis, suggested public comment, connection-request instruction and suggested first DM.',
-    '9. Do not mark Comment sent, Connection sent, Connected or First UW DM sent unless Adrian explicitly confirms those actions happened.',
+    '## CRM write-back instructions - exact Conversation History Type labels',
+    'Match the existing Prospects row using the LinkedIn profile URL as primary key, with the capture ID and row as cross-checks. Do not duplicate a prospect, clear history, or alter sent-action dates.',
+    'Update the prospect analysis, recommended approach, draft status and next action where relevant. Append only appropriate drafts as NEW Conversation History entries:',
+    '- Suggested public comment - Draft (only when appropriate)',
+    '- Connection request instruction - Draft (usually standard request, no note)',
+    '- Suggested first personal DM - Draft (default FIRST PRIVATE message, when appropriate)',
+    '- Suggested first DM - Draft (backwards-compatible alias with EXACTLY the same first personal DM wording, required for old Companion retrieval)',
+    '- Suggested follow-up response - Draft (when replying to a recorded reply, not a replacement for a first DM)',
+    '- Potential UW introduction - Draft (ONLY if later conversation makes it relevant)',
+    '- Suggested first UW DM - Draft (ONLY for a justified direct-UW exception)',
+    'Do not generate a UW draft for every prospect or a placeholder DM if no contact is appropriate.',
+    'Never record comment sent, connection sent/accepted, first personal DM sent or first UW DM sent without Adrian explicitly confirming it. Do not manufacture follow-up dates.',
     '',
     '## Prospect identity / CRM key',
-    '- Prospect name at capture: ' + x.name,
-    '- Prospects sheet row at capture: ' + x.row,
-    '- LinkedIn profile: ' + (x.profileUrl || '(none supplied)'),
-    '- Capture ID: ' + (x.captureId || '(none)'),
-    '- Prospect Drive folder: ' + x.folderUrl,
-    '- Main CRM spreadsheet: https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/edit',
+    '- Prospect: '+x.name,
+    '- Existing Prospects sheet row: '+x.row,
+    '- LinkedIn profile: '+(x.profileUrl||'(none)'),
+    '- Capture ID: '+(x.captureId||'(none)'),
+    '- Folder: '+x.folderUrl,
+    '- CRM: https://docs.google.com/spreadsheets/d/'+SPREADSHEET_ID+'/edit',
     '',
-    'Use the LinkedIn profile URL as the primary match key when updating the CRM. Do not create a duplicate prospect row if one already exists.',
+    '## Context',
+    '- Platform: '+(x.source||''),
+    '- Situation: '+(x.track||''),
+    '- Relationship: '+(x.relationship||''),
+    '- Original post: '+(x.sourceUrl||'(none)'),
+    '- Adrian notes: '+(x.notes||'(none)'),
     '',
-    '## Capture context',
-    '- Platform: ' + (x.source || ''),
-    '- Situation selected: ' + (x.track || ''),
-    '- Relationship: ' + (x.relationship || ''),
-    '- Source / original post: ' + (x.sourceUrl || '(none supplied)'),
-    '- Adrian notes: ' + (x.notes || '(none)'),
+    isReply?'## Their new reply (recorded by Adrian)\n'+x.replyText+'\n':'',
+    '## Full relationship history (oldest first)',
+    history||'- No existing history.',
     '',
-    '## Uploaded files',
-    fileLines || '- No screenshots were uploaded.',
+    '## Saved screenshot evidence',
+    files||'- No screenshots provided.',
     '',
-    '## Final response to Adrian',
-    'Keep the response practical and concise. Give the recommended approach, the copy-ready public comment, the connection-request action, and note that the first DM has been stored in the CRM for later if a connection is accepted.'
+    '## Final answer',
+    isReply?'Recommend the most human NEXT response, not automatically UW. Give ONE draft if appropriate, and confirm the exact CRM History label saved.':'Give the recommended approach, public comment if useful, normal connection instruction and one first PERSONAL DM if genuinely appropriate. Explain any UW-first exception. Confirm CRM write-back without claiming anything was sent.'
   ].join('\n');
 }
 
 function cleanLinkedInName(name) {
   return String(name || '').replace(/\s+\d{5,}$/,'').trim() || 'Unnamed prospect';
+}
+
+function recordReply(body) {
+  const replyText=String(body.reply_text||'').trim();
+  const replyId=String(body.reply_id||'').trim();
+  if (!replyText) throw new Error('Paste their actual response first.');
+  if (!replyId) throw new Error('Missing reply event ID.');
+  const lock=LockService.getScriptLock();
+  lock.waitLock(25000);
+  try {
+    const ss=SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet=ss.getSheetByName(PROSPECTS_SHEET);
+    const headers=ensureProspectHeaders(sheet);
+    const captureId=String(body.capture_id||'').trim();
+    const profileUrl=String(body.profile_url||'').trim();
+    const requestedName=String(body.prospect_name||'').trim();
+    const last=sheet.getLastRow();
+    let row=0;
+    if (captureId && headers['Last capture ID'] && last>=2) {
+      const hit=sheet.getRange(2,headers['Last capture ID'],last-1,1).createTextFinder(captureId).matchEntireCell(true).findNext();
+      if (hit) row=hit.getRow();
+    }
+    if (!row) row=findProspectRow(sheet,headers,profileUrl,requestedName);
+    if (!row) throw new Error('Prospect not found. A reply cannot create a prospect.');
+    const vals=sheet.getRange(row,1,1,sheet.getLastColumn()).getDisplayValues()[0];
+    const get=h=>headers[h]?vals[headers[h]-1]:'';
+    const name=String(get('Name')||requestedName);
+    const actualProfile=String(get('LinkedIn profile')||profileUrl);
+    if (String(get('Last reply ID'))===replyId) {
+      const fileId=String(get('Latest reply handoff ID')||'');
+      if (fileId) {
+        const file=DriveApp.getFileById(fileId);
+        return {ok:true,already_recorded:true,prospect_name:name,capture_id:String(get('Last capture ID')||captureId),
+          profile_url:actualProfile,handoff_filename:file.getName(),handoff_url:file.getUrl(),
+          handoff_markdown:file.getBlob().getDataAsString(),files:[]};
+      }
+      return {ok:true,already_recorded:true,prospect_name:name,capture_id:String(get('Last capture ID')||captureId),
+        profile_url:actualProfile,files:[]};
+    }
+    const now=new Date();
+    appendHistory(ss,{prospect:name,date:now,direction:'Inbound',type:'Prospect replied',
+      summary:replyText,file:'',linkedin:actualProfile,next:'Process reply handoff',status:'Conversation',
+      notes:'Recorded by Adrian in Companion'});
+    const folder=getOrCreateProspectFolder(name);
+    const handoff=buildHandoffMarkdown({name:name,row:row,captureId:String(get('Last capture ID')||captureId),
+      profileUrl:actualProfile,sourceUrl:String(get('Source post')||''),
+      track:String(get('Track')||''),source:String(get('Source')||''),relationship:String(get('Relationship')||''),
+      notes:String(get('Notes')||''),folderUrl:folder.getUrl(),files:listImageFiles(folder),
+      history:prospectHistory(ss,name),replyText:replyText,refinement:true});
+    const filename='ChatGPT Reply Handoff - '+cleanName(name)+' - '+
+      Utilities.formatDate(now,Session.getScriptTimeZone()||'Europe/London','yyyy-MM-dd_HHmmss')+'.md';
+    const file=folder.createFile(filename,handoff,MimeType.PLAIN_TEXT);
+    writeByHeaders(sheet,headers,row,{'Last reply ID':replyId,'Latest reply handoff ID':file.getId(),
+      'Last prospect reply':now,'Last contact':now,'Status':'Conversation',
+      'Draft status':'Awaiting reply analysis','Next action':'Process reply handoff'});
+    appendHistory(ss,{prospect:name,date:now,direction:'System',type:'Reply ChatGPT handoff created',
+      summary:'Full-history handoff created after a recorded reply.',file:file.getUrl(),linkedin:actualProfile,
+      next:'Process reply handoff',status:'Conversation',notes:''});
+    return {ok:true,prospect_name:name,capture_id:String(get('Last capture ID')||captureId),
+      profile_url:actualProfile,handoff_filename:filename,handoff_url:file.getUrl(),
+      handoff_markdown:handoff,files:[]};
+  } finally {lock.releaseLock()}
 }
 
 function markAction(body) {
@@ -336,6 +423,9 @@ function markAction(body) {
   const now = new Date();
   const action = String(body.action_name || '');
 
+  const completionColumn={comment_sent:'Comment sent',connection_sent:'Connection sent',connected:'Connected',
+    personal_dm_sent:'First personal DM sent',uw_dm_sent:'First UW DM sent',dm_sent:'First UW DM sent'}[action];
+  if (completionColumn && headers[completionColumn] && sheet.getRange(row,headers[completionColumn]).getValue()) return {ok:true,action:action,already_marked:true};
   if (action === 'comment_sent') {
     writeByHeaders(sheet,headers,row,{
       'Comment sent':now,
@@ -369,10 +459,16 @@ function markAction(body) {
       'Connected date':now,
       'Status':'Connected',
       'Last contact':now,
-      'Next action':'Send first UW DM'
+      'Next action':'Review first personal DM'
     });
-    appendHistory(ss,{prospect:actualName,date:now,direction:'External',type:'Connection accepted',summary:'LinkedIn connection accepted.',file:'',linkedin:profileUrl,next:'Send first UW DM',status:'Connected',notes:''});
-  } else if (action === 'dm_sent') {
+    appendHistory(ss,{prospect:actualName,date:now,direction:'External',type:'Connection accepted',summary:'LinkedIn connection accepted.',file:'',linkedin:profileUrl,next:'Review first personal DM',status:'Connected',notes:''});
+  } else if (action === 'personal_dm_sent') {
+    writeByHeaders(sheet,headers,row,{'First personal DM sent':now,'First DM sent date':now,
+      'Status':'Personal conversation','Last contact':now,'Next action':'Wait for a natural reply'});
+    appendHistory(ss,{prospect:actualName,date:now,direction:'Outbound',type:'First personal DM sent',
+      summary:String(body.sent_text||'').trim()||'Adrian confirmed first personal DM sent.',file:'',linkedin:profileUrl,
+      next:'Wait for a natural reply',status:'Personal conversation',notes:''});
+  } else if (action === 'dm_sent' || action === 'uw_dm_sent') {
     writeByHeaders(sheet,headers,row,{
       'First UW DM sent':now,
       'First DM sent date':now,
@@ -381,7 +477,7 @@ function markAction(body) {
       'Next action':'Follow up in about 1 week if no reply',
       'Follow-up date':new Date(now.getTime()+7*24*60*60*1000)
     });
-    appendHistory(ss,{prospect:actualName,date:now,direction:'Outbound',type:'First UW DM sent',summary:'Stored first DM marked as sent.',file:'',linkedin:profileUrl,next:'Follow up in about 1 week if no reply',status:'DM sent',notes:''});
+    appendHistory(ss,{prospect:actualName,date:now,direction:'Outbound',type:'First UW DM sent',summary:String(body.sent_text || '').trim() || 'Adrian confirmed first UW DM sent.',file:'',linkedin:profileUrl,next:'Follow up in about 1 week if no reply',status:'DM sent',notes:''});
   } else {
     throw new Error('Unknown action.');
   }
@@ -415,9 +511,17 @@ function listProspects() {
       connection_sent:!!get('Connection sent'),
       connected:!!get('Connected'),
       first_dm_sent:!!get('First UW DM sent'),
+      personal_dm_sent:!!get('First personal DM sent'),
+      uw_dm_sent:!!get('First UW DM sent'),
+      prospect_replied:!!get('Last prospect reply'),
+      reply_pending:String(get('Draft status')||'').indexOf('Awaiting reply analysis')===0,
       public_comment:(drafts[name.toLowerCase()] || {}).public_comment || '',
       connection_instruction:(drafts[name.toLowerCase()] || {}).connection_instruction || '',
       first_dm:(drafts[name.toLowerCase()] || {}).first_dm || '',
+      personal_dm:(drafts[name.toLowerCase()] || {}).personal_dm || '',
+      followup_dm:(drafts[name.toLowerCase()] || {}).followup_dm || '',
+      uw_intro:(drafts[name.toLowerCase()] || {}).uw_intro || '',
+      first_dm_kind:(drafts[name.toLowerCase()] || {}).first_dm_kind || '',
       draft_status:String(get('Draft status') || ''),
       capture_id:String(get('Last capture ID') || '')
     };
@@ -429,6 +533,10 @@ function updateDraft(body) {
   const allowed = {
     'Suggested public comment - Draft': true,
     'Suggested first DM - Draft': true,
+    'Suggested first personal DM - Draft': true,
+    'Suggested follow-up response - Draft': true,
+    'Potential UW introduction - Draft': true,
+    'Suggested first UW DM - Draft': true,
     'Connection request instruction - Draft': true
   };
   const type = String(body.draft_type || '').trim();
@@ -455,6 +563,7 @@ function updateDraft(body) {
   const status = headers['Status'] ? String(sheet.getRange(row,headers['Status']).getDisplayValue() || 'New') : 'New';
   const now = new Date();
   appendHistory(ss,{prospect:actualName,date:now,direction:'Outgoing edit',type:type,summary:content,file:'',linkedin:actualProfile,next:next,status:status,notes:'Edited in Partner Companion.'});
+  if (type === 'Suggested first personal DM - Draft') appendHistory(ss,{prospect:actualName,date:now,direction:'Outgoing edit',type:'Suggested first DM - Draft',summary:content,file:'',linkedin:actualProfile,next:next,status:status,notes:'Backwards-compatible first personal DM alias.'});
   writeByHeaders(sheet,headers,row,{'Draft status':'Edited in Companion'});
   return {ok:true,prospect_name:actualName,draft_type:type,content:content};
 }
@@ -500,53 +609,54 @@ function getProspectOutput(body) {
       connection_sent:!!get('Connection sent'),
       connected:!!get('Connected'),
       first_dm_sent:!!get('First UW DM sent'),
+      personal_dm_sent:!!get('First personal DM sent'),
+      uw_dm_sent:!!get('First UW DM sent'),
+      prospect_replied:!!get('Last prospect reply'),
+      reply_pending:String(get('Draft status')||'').indexOf('Awaiting reply analysis')===0,
       public_comment:drafts.public_comment || '',
       connection_instruction:drafts.connection_instruction || '',
       first_dm:drafts.first_dm || '',
+      personal_dm:drafts.personal_dm || '',
+      followup_dm:drafts.followup_dm || '',
+      uw_intro:drafts.uw_intro || '',
+      first_dm_kind:drafts.first_dm_kind || '',
       draft_status:String(get('Draft status') || ''),
       capture_id:String(get('Last capture ID') || '')
     }
   };
 }
 
-function latestDraftsForProspect(ss, name) {
-  const sheet = ss.getSheetByName(HISTORY_SHEET);
-  const last = sheet.getLastRow();
-  const out = {public_comment:'',connection_instruction:'',first_dm:''};
-  if (!name || last < 2) return out;
-
-  const hits = sheet.getRange(2, 1, last - 1, 1)
-    .createTextFinder(name).matchEntireCell(true).findAll();
-
-  for (let i = hits.length - 1; i >= 0; i--) {
-    const row = hits[i].getRow();
-    const vals = sheet.getRange(row, 4, 1, 2).getDisplayValues()[0];
-    const type = String(vals[0] || '').trim();
-    const content = vals[1] || '';
-    if (type === 'Suggested public comment - Draft' && !out.public_comment) out.public_comment = content;
-    if (type === 'Connection request instruction - Draft' && !out.connection_instruction) out.connection_instruction = content;
-    if (type === 'Suggested first DM - Draft' && !out.first_dm) out.first_dm = content;
-    if (out.public_comment && out.connection_instruction && out.first_dm) break;
-  }
-  return out;
+function latestDraftsForProspect(ss,name) {
+  const all=latestOutreachDrafts(ss);
+  return all[String(name||'').trim().toLowerCase()]||
+    {public_comment:'',connection_instruction:'',first_dm:'',personal_dm:'',followup_dm:'',uw_intro:'',first_dm_kind:''};
 }
-
 function latestOutreachDrafts(ss) {
-  const sheet = ss.getSheetByName(HISTORY_SHEET);
-  const last = sheet.getLastRow();
-  const out = {};
-  if (last < 2) return out;
-  const vals = sheet.getRange(2,1,last-1,10).getDisplayValues();
+  const sheet=ss.getSheetByName(HISTORY_SHEET);
+  const last=sheet.getLastRow();
+  const out={};
+  if (last<2) return out;
+  const vals=sheet.getRange(2,1,last-1,10).getDisplayValues();
   for (let i=vals.length-1;i>=0;i--) {
-    const name=String(vals[i][0]||'').trim();
-    const type=String(vals[i][3]||'').trim();
+    const name=String(vals[i][0]||'').trim(), type=String(vals[i][3]||'').trim();
     if (!name) continue;
     const key=name.toLowerCase();
-    if (!out[key]) out[key]={public_comment:'',connection_instruction:'',first_dm:''};
-    if (type === 'Suggested public comment - Draft' && !out[key].public_comment) out[key].public_comment = vals[i][4] || '';
-    if (type === 'Connection request instruction - Draft' && !out[key].connection_instruction) out[key].connection_instruction = vals[i][4] || '';
-    if (type === 'Suggested first DM - Draft' && !out[key].first_dm) out[key].first_dm = vals[i][4] || '';
+    if (!out[key]) out[key]={public_comment:'',connection_instruction:'',first_dm:'',personal_dm:'',
+      followup_dm:'',uw_intro:'',first_uw_dm:'',first_dm_kind:''};
+    const d=out[key],content=vals[i][4]||'';
+    if (type==='Suggested public comment - Draft'&&!d.public_comment) d.public_comment=content;
+    if (type==='Connection request instruction - Draft'&&!d.connection_instruction) d.connection_instruction=content;
+    if (type==='Suggested first personal DM - Draft'&&!d.personal_dm) d.personal_dm=content;
+    if (type==='Suggested first DM - Draft'&&!d.first_dm) d.first_dm=content;
+    if (type==='Suggested follow-up response - Draft'&&!d.followup_dm) d.followup_dm=content;
+    if (type==='Potential UW introduction - Draft'&&!d.uw_intro) d.uw_intro=content;
+    if (type==='Suggested first UW DM - Draft'&&!d.first_uw_dm) d.first_uw_dm=content;
   }
+  Object.keys(out).forEach(k=>{
+    const d=out[k];
+    d.first_dm_kind=d.personal_dm?'personal':d.first_uw_dm?'uw':d.first_dm?'legacy':'';
+    d.first_dm=d.personal_dm||d.first_uw_dm||d.first_dm;
+  });
   return out;
 }
 function dateIso(v) {
@@ -622,7 +732,7 @@ function mimeExt(m){return m==='image/png'?'.png':m==='image/webp'?'.webp':m==='
 function ensureProspectHeaders(sheet) {
   let headers = headerMap(sheet);
   [
-    'Last capture ID','Target role','Job preferences','Recommended approach','Analysis summary','Draft status','Initial action date','Connected date','First DM sent date'
+    'Last capture ID','Target role','Job preferences','Recommended approach','Analysis summary','Draft status','Initial action date','Connected date','First DM sent date','First personal DM sent','Last prospect reply','Last reply ID','Latest reply handoff ID'
   ].forEach(name => ensureHeader(sheet, headers, name));
   return headerMap(sheet);
 }
