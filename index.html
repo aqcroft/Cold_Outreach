@@ -143,6 +143,7 @@ main{padding:16px 14px 100px}.view{display:none}.view.active{display:block}.stac
   <div class="card">
     <div class="section-title"><div><h2>Pipeline</h2><div class="muted">Drafts, confirmed sent actions and replies in one place. Nothing gets marked sent automatically.</div></div><button class="btn small secondary" onclick="loadPipeline()">Refresh</button></div>
   </div>
+  <div id="backendUpgradeNote" class="card muted" style="display:none;margin-bottom:12px">⚠️ The Companion is v1.3.0 but your CRM Apps Script is still on an older version. Comments and existing draft retrieval still work; recording replies and confirming personal/UW DMs need the updated backend deployment. See the release notes in the repository.</div>
   <div id="pipelineList" class="stack"><div class="card muted">Loading prospects…</div></div>
 </div>
 </section>
@@ -166,6 +167,7 @@ main{padding:16px 14px 100px}.view{display:none}.view.active{display:block}.stac
 <script>
 var BACKEND_URL_KEY='acOutreachBackendUrl';
 var BACKEND_KEY_KEY='acOutreachBackendKey';
+var crmCapabilities=[];
 function switchTo(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById(id).classList.add('active');const tab=document.querySelector('[data-view="'+id+'"]');if(tab)tab.classList.add('active');if(id==='pipeline')loadPipeline();if(id==='followups')loadFollowups();window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchTo(t.dataset.view)));
 document.querySelectorAll('[data-choice-group]').forEach(group=>group.addEventListener('click',e=>{const b=e.target.closest('.choice-btn');if(!b)return;const id=group.dataset.choiceGroup;const input=document.getElementById(id);if(input)input.value=b.dataset.value;group.querySelectorAll('.choice-btn').forEach(x=>x.classList.toggle('active',x===b));}));
@@ -292,7 +294,11 @@ function renderHandoff(d){
 
   const ref=(d.capture_id||localStorage.getItem('acOutreachLastCaptureId')||'').slice(0,8).toUpperCase();
   const prospectName=String(d.prospect_name||currentSavedProspect?.name||'').trim();
-  const prompt=(prospectName?prospectName+' - ':'')+'Process the Cold Outreach CRM handoff '+(ref?ref+': ':'')+currentHandoff.filename+'. Find that exact handoff in the connected Google Drive, follow its relationship-first instructions, use saved screenshots and conversation history as the evidence, do not research LinkedIn URLs, and write only appropriate stage-specific drafts back to the SAME CRM prospect. Personal connection first; never an automatic UW DM.';
+  const replyHandoff=/Reply Handoff/i.test(currentHandoff.filename);
+  const policy=replyHandoff
+    ? ' IMPORTANT: This is a THEY REPLIED handoff. Read the actual new reply and full saved relationship history; recommend the most human next step. Do NOT introduce UW just because the conversation continued. Save a Suggested follow-up response - Draft only when appropriate.'
+    : ' IMPORTANT: For cold or semi-cold people the default is a genuine first PERSONAL DM with no UW reference, using evidenced shared interests or experiences. Any old handoff instruction asking for an automatic first UW DM is superseded. Only introduce UW early where the person explicitly asked, previously discussed it, or showed clear relevant interest. Store a first personal DM using BOTH Suggested first personal DM - Draft and the backwards-compatible Suggested first DM - Draft labels.';
+  const prompt=(prospectName?prospectName+' - ':'')+'Process the Cold Outreach CRM handoff '+(ref?ref+': ':'')+currentHandoff.filename+'. Find that exact handoff in the connected Google Drive, follow its relationship-first instructions, use saved screenshots and full conversation history as evidence, do not research LinkedIn URLs, and save appropriate stage-specific analysis and drafts to the SAME CRM prospect.'+policy;
 
   const card=document.getElementById('analysisOutput');
   card.style.display='block';
@@ -587,6 +593,7 @@ async function recordProspectReply(i) {
   const status=document.getElementById('pipelineReplyStatus'+i),button=document.getElementById('pipelineReplyButton'+i);
   const reply=(input?.value||'').trim();
   if(!p||!reply){if(status)status.textContent='Paste their actual reply first.';return}
+  if(!crmCapabilities.includes('recordReply')){if(status)status.textContent='Update the live Apps Script CRM backend before recording replies here.';return}
   if(!confirm('Record this reply from '+p.name+' and create a new ChatGPT handoff?'))return;
   const id=input.dataset.replyId||(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random());
   input.dataset.replyId=id;
@@ -608,6 +615,10 @@ async function loadPipeline(){
   const box=document.getElementById('pipelineList');if(!box)return;
   box.innerHTML='<div class="card muted">Loading prospects…</div>';
   try{
+    const health=await crmPost({action:'health'});
+    crmCapabilities=Array.isArray(health.capabilities)?health.capabilities:[];
+    const upgrade=document.getElementById('backendUpgradeNote');
+    if(upgrade)upgrade.style.display=crmCapabilities.includes('recordReply')?'none':'block';
     const d=await crmPost({action:'listProspects'});
     const ps=d.prospects||[];
     if(!ps.length){box.innerHTML='<div class="card muted">No prospects yet.</div>';return}
@@ -694,6 +705,7 @@ async function savePipelineDraft(i,type,elementId){
 async function markPipelineAction(profileEnc,nameEnc,actionName,textId){
   const label={comment_sent:'public comment',connection_sent:'connection request',connected:'connection acceptance',
     personal_dm_sent:'first PERSONAL DM',uw_dm_sent:'first UW DM',dm_sent:'first UW DM'}[actionName]||actionName;
+  if(['personal_dm_sent','uw_dm_sent'].includes(actionName)&&!crmCapabilities.includes('personalSent')){alert('This CRM backend needs the v1.3.0 Apps Script deployment before recording distinct personal and UW messages. No status was changed.');return}
   if(!confirm('Confirm the '+label+' actually happened? This will update the CRM history and status.'))return;
   const text=textId?(document.getElementById(textId)?.value||'').trim():'';
   try{
