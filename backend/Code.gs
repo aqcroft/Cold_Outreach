@@ -511,9 +511,16 @@ function listProspects() {
       connection_sent:!!get('Connection sent'),
       connected:!!get('Connected'),
       first_dm_sent:!!get('First UW DM sent'),
+      personal_dm_sent:!!get('First personal DM sent'),
+      uw_dm_sent:!!get('First UW DM sent'),
+      prospect_replied:!!get('Last prospect reply'),
       public_comment:(drafts[name.toLowerCase()] || {}).public_comment || '',
       connection_instruction:(drafts[name.toLowerCase()] || {}).connection_instruction || '',
       first_dm:(drafts[name.toLowerCase()] || {}).first_dm || '',
+      personal_dm:(drafts[name.toLowerCase()] || {}).personal_dm || '',
+      followup_dm:(drafts[name.toLowerCase()] || {}).followup_dm || '',
+      uw_intro:(drafts[name.toLowerCase()] || {}).uw_intro || '',
+      first_dm_kind:(drafts[name.toLowerCase()] || {}).first_dm_kind || '',
       draft_status:String(get('Draft status') || ''),
       capture_id:String(get('Last capture ID') || '')
     };
@@ -601,53 +608,53 @@ function getProspectOutput(body) {
       connection_sent:!!get('Connection sent'),
       connected:!!get('Connected'),
       first_dm_sent:!!get('First UW DM sent'),
+      personal_dm_sent:!!get('First personal DM sent'),
+      uw_dm_sent:!!get('First UW DM sent'),
+      prospect_replied:!!get('Last prospect reply'),
       public_comment:drafts.public_comment || '',
       connection_instruction:drafts.connection_instruction || '',
       first_dm:drafts.first_dm || '',
+      personal_dm:drafts.personal_dm || '',
+      followup_dm:drafts.followup_dm || '',
+      uw_intro:drafts.uw_intro || '',
+      first_dm_kind:drafts.first_dm_kind || '',
       draft_status:String(get('Draft status') || ''),
       capture_id:String(get('Last capture ID') || '')
     }
   };
 }
 
-function latestDraftsForProspect(ss, name) {
-  const sheet = ss.getSheetByName(HISTORY_SHEET);
-  const last = sheet.getLastRow();
-  const out = {public_comment:'',connection_instruction:'',first_dm:''};
-  if (!name || last < 2) return out;
-
-  const hits = sheet.getRange(2, 1, last - 1, 1)
-    .createTextFinder(name).matchEntireCell(true).findAll();
-
-  for (let i = hits.length - 1; i >= 0; i--) {
-    const row = hits[i].getRow();
-    const vals = sheet.getRange(row, 4, 1, 2).getDisplayValues()[0];
-    const type = String(vals[0] || '').trim();
-    const content = vals[1] || '';
-    if (type === 'Suggested public comment - Draft' && !out.public_comment) out.public_comment = content;
-    if (type === 'Connection request instruction - Draft' && !out.connection_instruction) out.connection_instruction = content;
-    if (type === 'Suggested first DM - Draft' && !out.first_dm) out.first_dm = content;
-    if (out.public_comment && out.connection_instruction && out.first_dm) break;
-  }
-  return out;
+function latestDraftsForProspect(ss,name) {
+  const all=latestOutreachDrafts(ss);
+  return all[String(name||'').trim().toLowerCase()]||
+    {public_comment:'',connection_instruction:'',first_dm:'',personal_dm:'',followup_dm:'',uw_intro:'',first_dm_kind:''};
 }
-
 function latestOutreachDrafts(ss) {
-  const sheet = ss.getSheetByName(HISTORY_SHEET);
-  const last = sheet.getLastRow();
-  const out = {};
-  if (last < 2) return out;
-  const vals = sheet.getRange(2,1,last-1,10).getDisplayValues();
+  const sheet=ss.getSheetByName(HISTORY_SHEET);
+  const last=sheet.getLastRow();
+  const out={};
+  if (last<2) return out;
+  const vals=sheet.getRange(2,1,last-1,10).getDisplayValues();
   for (let i=vals.length-1;i>=0;i--) {
-    const name=String(vals[i][0]||'').trim();
-    const type=String(vals[i][3]||'').trim();
+    const name=String(vals[i][0]||'').trim(), type=String(vals[i][3]||'').trim();
     if (!name) continue;
     const key=name.toLowerCase();
-    if (!out[key]) out[key]={public_comment:'',connection_instruction:'',first_dm:''};
-    if (type === 'Suggested public comment - Draft' && !out[key].public_comment) out[key].public_comment = vals[i][4] || '';
-    if (type === 'Connection request instruction - Draft' && !out[key].connection_instruction) out[key].connection_instruction = vals[i][4] || '';
-    if (type === 'Suggested first DM - Draft' && !out[key].first_dm) out[key].first_dm = vals[i][4] || '';
+    if (!out[key]) out[key]={public_comment:'',connection_instruction:'',first_dm:'',personal_dm:'',
+      followup_dm:'',uw_intro:'',first_uw_dm:'',first_dm_kind:''};
+    const d=out[key],content=vals[i][4]||'';
+    if (type==='Suggested public comment - Draft'&&!d.public_comment) d.public_comment=content;
+    if (type==='Connection request instruction - Draft'&&!d.connection_instruction) d.connection_instruction=content;
+    if (type==='Suggested first personal DM - Draft'&&!d.personal_dm) d.personal_dm=content;
+    if (type==='Suggested first DM - Draft'&&!d.first_dm) d.first_dm=content;
+    if (type==='Suggested follow-up response - Draft'&&!d.followup_dm) d.followup_dm=content;
+    if (type==='Potential UW introduction - Draft'&&!d.uw_intro) d.uw_intro=content;
+    if (type==='Suggested first UW DM - Draft'&&!d.first_uw_dm) d.first_uw_dm=content;
   }
+  Object.keys(out).forEach(k=>{
+    const d=out[k];
+    d.first_dm_kind=d.personal_dm?'personal':d.first_uw_dm?'uw':d.first_dm?'legacy':'';
+    d.first_dm=d.personal_dm||d.first_uw_dm||d.first_dm;
+  });
   return out;
 }
 function dateIso(v) {
